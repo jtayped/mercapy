@@ -33,6 +33,9 @@ class Product:
     def _product_exists(self) -> bool:
         return bool(self._response)
 
+    def refresh(self):
+        self._response = self._request_product()
+
     @property
     def ean(self) -> str:
         return self._response.get("ean")
