@@ -1,1 +1,1 @@
-API_URL = "https://tienda.mercadona.es/api/"
+API_URL = "https://tienda.mercadona.es/"
