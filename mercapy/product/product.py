@@ -1,40 +1,40 @@
 from dataclasses import dataclass
 from urllib.parse import urljoin
-import requests
-import json
 
 from ..exceptions.product import *
 from ..constants import API_URL
 from ..utils.urls import get_file_path
+from ..utils.api import fetch_json
 from .photo import Photo
 
 
 @dataclass
 class Product:
     id: str
+    lang: str = "es"
 
     def __post_init__(self):
         self._endpoint = urljoin(API_URL, f"/api/products/{self.id}")
-        self._response = self._request_product()
+        self._response = self._request(self._endpoint)
         if not self._product_exists():
             raise ProductNotFound(self.id)
-
-    def _request_product(self) -> dict:
-        try:
-            response = requests.get(self._endpoint)
-            response.raise_for_status()
-
-            if "application/json" in response.headers.get("content-type", ""):
-                return response.json()
-
-        except requests.exceptions.RequestException as e:
-            raise ErrorFetchingProduct from e
 
     def _product_exists(self) -> bool:
         return bool(self._response)
 
+    def _request(self, url):
+        return fetch_json(url, params={"lang": self.lang})
+
+    def get_recommended(self) -> list["Product"]:
+        endpoint = urljoin(self._endpoint, f"/api/products/{self.id}/xselling/")
+
+        response = self._request(endpoint)
+        results = response["results"]
+
+        return [Product(r.get("id")) for r in results]
+
     def refresh(self):
-        self._response = self._request_product()
+        self._response = self._request(self._endpoint)
 
     @property
     def ean(self) -> str:
