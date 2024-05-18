@@ -14,7 +14,11 @@ def fetch_json(url: str, params: dict = None) -> dict:
         return {}
 
 
-def query_algolia(query: str):
+def query_algolia(query: str, lang: str = "es") -> dict:
+    url = (
+        f"https://7uzjkl1dj0-dsn.algolia.net/1/indexes/products_prod_4115_{lang}/query"
+    )
+
     # Headers required for the request
     headers = {
         "x-algolia-application-id": ALGOLIA_APP_ID,
@@ -26,9 +30,7 @@ def query_algolia(query: str):
     payload = {"params": f"query={query}"}
 
     try:
-        response = requests.post(
-            ALGOLIA_API_URL, headers=headers, data=json.dumps(payload)
-        )
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
         response.raise_for_status()
 
         # Check if the request was successful
