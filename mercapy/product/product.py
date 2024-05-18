@@ -16,10 +16,8 @@ class Product:
     def __post_init__(self):
         self._endpoint = urljoin(API_URL, f"/api/products/{self.id}")
         self._response = self._request(self._endpoint)
-        if not self._product_exists():
-            raise ProductNotFound(self.id)
 
-    def _product_exists(self) -> bool:
+    def exists(self) -> bool:
         return bool(self._response)
 
     def _request(self, url):
