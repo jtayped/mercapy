@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from urllib.parse import urlparse
 import requests
 import os
 
