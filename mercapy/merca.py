@@ -31,25 +31,37 @@ def search(query: str, lang: str = "es") -> list[Product]:
     return products
 
 
-def get_home_recommendations(lang: str = "es") -> list[Product]:
+def get_home_recommendations(lang: str = "es") -> dict:
     """
-    Product recommendations on the home page.
+    Retrieves product recommendations for the home page grouped by sections.
 
     Args:
-        lang (str): Language code. Defaults to spanish. Can be "en" too.
+        lang (str): Language code. Defaults to Spanish. Can be "en" for English.
 
     Returns:
-        list[Product]: List of recommended products.
+        dict: Dictionary where keys are section names (or "layout") and values are lists of recommended products.
     """
     url = urljoin(API_URL, f"/api/home/?lang={lang}")
     response = fetch_json(url)
 
-    products = [
-        Product(item["id"])
-        for section in response.get("sections", [])
-        for item in section.get("content", {}).get("items", [])
-    ]
-    return products
+    sections = response.get("sections", [])
+
+    # Dictionary to store products grouped by sections
+    section_products = {}
+
+    for section in sections:
+        section_name = section.get(
+            "layout"
+        )
+
+        # Banners often aren't actual products but "seasons" or groups of products
+        if section_name != "banner":
+            items = section.get("content", {}).get("items", [])
+
+            products = [Product(item["id"]) for item in items]
+            section_products[section_name] = products
+
+    return section_products
 
 
 def get_new_arrivals(lang: str = "es") -> list[Product]:
