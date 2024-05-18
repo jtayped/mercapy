@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from urllib.parse import urljoin
 
-from .exceptions.product import *
-from .constants import API_URL
-from .utils.urls import get_file_path
-from .utils.api import fetch_json
-from .product.photo import Photo
+from ..exceptions.product import *
+from ..constants import API_URL
+from ..utils.urls import get_file_path
+from ..utils.api import fetch_json
+from .photo import Photo
 
 
 @dataclass
