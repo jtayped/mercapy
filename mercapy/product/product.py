@@ -3,7 +3,7 @@ from urllib.parse import urljoin
 from typing import List, Union, Literal
 
 from ..exceptions.product import *
-from ..constants import API_URL
+from ..constants import API_URL, NIJAR_POSTAL_CODE
 from ..utils.urls import get_file_path
 from ..utils.api import fetch_json
 from .photo import Photo
@@ -25,12 +25,12 @@ class Product:
 
     Args:
         id (str or dict): Product's identifier or information from Mercadona's API.
-        warehouse_post_code (str): Post code of the distribution center. Defaults to one in Almería ("04115").
-        lang (str): The language in which the API responds. Defaults to spanish ("es"), and can also be english ("en")
+        warehouse_postal_code (str): Warehouse or distribution center postal code. Defaults to the one in Níjar, Almería.
+        lang (str): The language in which the API responds. Defaults to spanish ("es"), and can also be english ("en").
     """
 
     id: Union[str, dict]
-    distribution_post_code: str = "4115"
+    warehouse_postal_code: str = NIJAR_POSTAL_CODE
     lang: Literal["es", "en"] = "es"
     _endpoint: str = field(init=False, repr=False)
     _response: dict = field(default=None, init=False, repr=False)
@@ -49,7 +49,7 @@ class Product:
         if self._response is None:
             self._response = fetch_json(
                 self._endpoint,
-                params={"lang": self.lang, "wh": self.distribution_post_code},
+                params={"lang": self.lang, "wh": self.warehouse_postal_code},
             )
             self.id = self._response.get("id", self.id)
 
