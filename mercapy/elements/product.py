@@ -35,14 +35,13 @@ class Product:
     _response: dict = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
-        if isinstance(self.id, str):
-            self._endpoint = urljoin(API_URL, f"/api/products/{self.id}")
-        else:
+        if isinstance(self.id, dict):
             self._response = self.id
             self.id = self._response.get("id")
             if not self.id:
                 raise ValueError("The dictionary provided must contain an 'id' key.")
-            self._endpoint = urljoin(API_URL, f"/api/products/{self.id}")
+
+        self._endpoint = urljoin(API_URL, f"/api/products/{self.id}")
 
     def _fetch_data(self):
         if self._response is None:
@@ -75,15 +74,39 @@ class Product:
         return self._response.get("display_name")
 
     @lazy_load_property
+    def slug(self) -> str:
+        return self._response.get("slug")
+
+    @lazy_load_property
     def legal_name(self) -> str:
-        return self._response.get("details", {}).get("legal_name")
+        details = self._response.get("details", None)
+        if not details:
+            self._fetch_data()
+
+        details = self._response.get("details", {})
+        return details.get("legal_name")
 
     @lazy_load_property
-    def price(self) -> float:
-        return self._response.get("price_instructions", {}).get("unit_price")
+    def unit_price(self) -> float | None:
+        return float(self._response.get("price_instructions", {}).get("unit_price"))
 
     @lazy_load_property
-    def iva(self) -> float:
+    def bulk_price(self) -> float:
+        return float(self._response.get("price_instructions", {}).get("bulk_price"))
+
+    @lazy_load_property
+    def is_discounted(self) -> bool:
+        return self._response.get("price_instructions", {}).get("price_decreased")
+
+    @lazy_load_property
+    def previous_price(self) -> float | None:
+        if not self.is_discounted:
+            return None
+
+        return self._response.get("price_instructions", {}).get("previous_unit_price")
+
+    @lazy_load_property
+    def iva(self) -> int:
         return self._response.get("price_instructions", {}).get("iva")
 
     @lazy_load_property
@@ -91,11 +114,16 @@ class Product:
         return self._response.get("badges", {}).get("requires_age_check", False)
 
     @lazy_load_property
-    def alcohol_by_volume(self) -> float:
-        percentage = self._response.get("details", {}).get("alcohol_by_volume")
+    def alcohol_by_volume(self) -> float | None:
+        details = self._response.get("details", None)
+        if not details:
+            self._fetch_data()
+
+        details = self._response.get("details", {})
+        percentage = details.get("alcohol_by_volume")
+
         if percentage:
             return float(percentage.removesuffix("º"))
-        return None
 
     @lazy_load_property
     def is_new(self) -> bool:
@@ -106,29 +134,37 @@ class Product:
         return self._response.get("price_instructions", {}).get("is_pack", False)
 
     @lazy_load_property
+    def pack_size(self) -> int | None:
+        if not self.is_pack:
+            return None
+
+        return self._response.get("price_instructions", {}).get("pack_size")
+
+    @lazy_load_property
     def photos(self) -> List[Photo]:
         photos = self._response.get("photos", [])
-        if photos:
-            return [Photo(get_file_path(p.get("regular"))) for p in photos]
 
-        # If no regular photos are available, fallback to the thumbnail
-        thumbnail = self._response.get("thumbnail", None)
-        if thumbnail:
-            return [Photo(get_file_path(thumbnail))]
+        # If photos aren't found, it is probable that a dict was provided without
+        # the photo information. So fetching the data from the main product endpoint
+        # the information can be populated.
+        if not photos:
+            self._fetch_data()
+            photos = self._response.get("photos", [])
 
-        return []
+        return [Photo(get_file_path(p.get("regular"))) for p in photos]
 
     @lazy_load_property
     def description(self) -> str:
-        return self._response.get("details", {}).get("description", "")
+        details = self._response.get("details", None)
+        if not details:
+            self._fetch_data()
+
+        details = self._response.get("details", {})
+        return details.get("description", "")
 
     @lazy_load_property
-    def minimum_amount(self) -> float:
+    def minimum_amount(self) -> int:
         return self._response.get("price_instructions", {}).get("min_bunch_amount", 1)
-
-    @lazy_load_property
-    def previous_price(self) -> float:
-        return self._response.get("price_instructions", {}).get("previous_unit_price")
 
     @lazy_load_property
     def weight(self) -> float:
@@ -140,12 +176,28 @@ class Product:
 
     @lazy_load_property
     def origin(self) -> str:
-        return self._response.get("details", {}).get("origin")
+        details = self._response.get("details", None)
+        if not details:
+            self._fetch_data()
+
+        details = self._response.get("details", {})
+
+        return details.get("origin")
 
     @lazy_load_property
     def suppliers(self) -> List[str]:
-        suppliers = self._response.get("details", {}).get("suppliers", [])
+        details = self._response.get("details", None)
+        if not details:
+            self._fetch_data()
+
+        details = self._response.get("details", {})
+        suppliers = details.get("suppliers", [])
         return [s["name"] for s in suppliers]
+
+    @lazy_load_property
+    def categories(self) -> List[str]:
+        categories = self._response.get("categories", [])
+        return [c["name"] for c in categories]
 
     @lazy_load_property
     def __dict__(self):
