@@ -1,5 +1,5 @@
 from .utils.api import query_algolia, fetch_json
-from .constants import API_URL
+from .constants import *
 from .elements import Product, Season
 
 from urllib.parse import urljoin
@@ -31,7 +31,9 @@ def search(query: str, lang: str = "es") -> list[Product]:
     return products
 
 
-def get_home_recommendations(lang: str = "es") -> dict:
+def get_home_recommendations(
+    lang: str = "es", warehouse_postal_code: str = NIJAR_POSTAL_CODE
+) -> dict:
     """
     Retrieves product recommendations for the home page grouped by sections.
 
@@ -56,14 +58,15 @@ def get_home_recommendations(lang: str = "es") -> dict:
 
         for item in items:
             if item.get("bg_colors", None):
-                parsed_item = Season(item["id"], "4115")
+                parsed_item = Season(item["id"], warehouse_postal_code)
             else:
-                parsed_item = Product(item["id"])
+                parsed_item = Product(item, warehouse_postal_code)
 
-            if section_products.get(section_name, None):
-                section_products[section_name].append(parsed_item)
-            else:
-                section_products[section_name] = [parsed_item]
+            if parsed_item.exists():
+                if section_products.get(section_name, None):
+                    section_products[section_name].append(parsed_item)
+                else:
+                    section_products[section_name] = [parsed_item]
 
     return section_products
 

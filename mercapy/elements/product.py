@@ -43,8 +43,8 @@ class Product:
 
         self._endpoint = urljoin(API_URL, f"/api/products/{self.id}")
 
-    def _fetch_data(self):
-        if self._response is None:
+    def _fetch_data(self, override=False):
+        if override or self._response is None:
             self._response = fetch_json(
                 self._endpoint,
                 params={"lang": self.lang, "wh": self.warehouse_postal_code},
@@ -67,6 +67,12 @@ class Product:
 
     @lazy_load_property
     def ean(self) -> str:
+        ean = self._response.get("ean")
+
+        if not ean:
+            self._fetch_data(override=True)
+
+        ean = self._response.get("ean")
         return self._response.get("ean")
 
     @lazy_load_property
@@ -81,7 +87,7 @@ class Product:
     def legal_name(self) -> str:
         details = self._response.get("details", None)
         if not details:
-            self._fetch_data()
+            self._fetch_data(override=True)
 
         details = self._response.get("details", {})
         return details.get("legal_name")
@@ -117,7 +123,7 @@ class Product:
     def alcohol_by_volume(self) -> float | None:
         details = self._response.get("details", None)
         if not details:
-            self._fetch_data()
+            self._fetch_data(override=True)
 
         details = self._response.get("details", {})
         percentage = details.get("alcohol_by_volume")
@@ -148,7 +154,7 @@ class Product:
         # the photo information. So fetching the data from the main product endpoint
         # the information can be populated.
         if not photos:
-            self._fetch_data()
+            self._fetch_data(override=True)
             photos = self._response.get("photos", [])
 
         return [Photo(get_file_path(p.get("regular"))) for p in photos]
@@ -157,7 +163,7 @@ class Product:
     def description(self) -> str:
         details = self._response.get("details", None)
         if not details:
-            self._fetch_data()
+            self._fetch_data(override=True)
 
         details = self._response.get("details", {})
         return details.get("description", "")
@@ -178,7 +184,7 @@ class Product:
     def origin(self) -> str:
         details = self._response.get("details", None)
         if not details:
-            self._fetch_data()
+            self._fetch_data(override=True)
 
         details = self._response.get("details", {})
 
@@ -188,7 +194,7 @@ class Product:
     def suppliers(self) -> List[str]:
         details = self._response.get("details", None)
         if not details:
-            self._fetch_data()
+            self._fetch_data(override=True)
 
         details = self._response.get("details", {})
         suppliers = details.get("suppliers", [])
@@ -201,4 +207,9 @@ class Product:
 
     @lazy_load_property
     def __dict__(self):
+        # If the EAN is not there, it means that the info is incomplete
+        ean = self._response.get("ean")
+        if not ean:
+            self._fetch_data(override=True)
+
         return self._response
