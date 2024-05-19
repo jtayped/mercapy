@@ -108,7 +108,15 @@ class Product:
     @lazy_load_property
     def photos(self) -> List[Photo]:
         photos = self._response.get("photos", [])
-        return [Photo(get_file_path(p.get("regular"))) for p in photos]
+        if photos:
+            return [Photo(get_file_path(p.get("regular"))) for p in photos]
+
+        # If no regular photos are available, fallback to the thumbnail
+        thumbnail = self._response.get("thumbnail", None)
+        if thumbnail:
+            return [Photo(get_file_path(thumbnail))]
+
+        return []
 
     @lazy_load_property
     def description(self) -> str:
