@@ -1,6 +1,6 @@
 from .utils.api import query_algolia, fetch_json
 from .constants import API_URL
-from .product import Product, Season
+from .elements import Product, Season
 
 from urllib.parse import urljoin
 
