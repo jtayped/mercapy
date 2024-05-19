@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from urllib.parse import urljoin
-from typing import Any, Dict, List, Union, Literal
+from typing import List, Union, Literal
 
 from ..exceptions.product import *
 from ..constants import API_URL
@@ -20,10 +20,20 @@ def lazy_load_property(func):
 
 @dataclass
 class Product:
-    id: Union[str, Dict[str, Any]]
+    """
+    Represents a product in Mercadona's catalog.
+
+    Args:
+        id (str or dict): Product's identifier or information from Mercadona's API.
+        warehouse_post_code (str): Post code of the distribution center. Defaults to one in Almería ("04115").
+        lang (str): The language in which the API responds. Defaults to spanish ("es"), and can also be english ("en")
+    """
+
+    id: Union[str, dict]
+    distribution_post_code: str = "4115"
     lang: Literal["es", "en"] = "es"
     _endpoint: str = field(init=False, repr=False)
-    _response: Dict[str, Any] = field(default=None, init=False, repr=False)
+    _response: dict = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
         if isinstance(self.id, str):
@@ -37,7 +47,10 @@ class Product:
 
     def _fetch_data(self):
         if self._response is None:
-            self._response = fetch_json(self._endpoint, params={"lang": self.lang})
+            self._response = fetch_json(
+                self._endpoint,
+                params={"lang": self.lang, "wh": self.distribution_post_code},
+            )
             self.id = self._response.get("id", self.id)
 
     def exists(self) -> bool:
