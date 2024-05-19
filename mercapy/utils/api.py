@@ -4,14 +4,16 @@ import requests, json
 
 def fetch_json(url: str, params: dict = None) -> dict:
     try:
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, allow_redirects=False)
         response.raise_for_status()
 
         if response.ok:
             return response.json()
 
     except requests.exceptions.RequestException as e:
-        return {}
+        print(e)
+    
+    return {}
 
 
 def query_algolia(query: str, lang: str = "es") -> dict:
