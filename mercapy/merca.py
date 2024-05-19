@@ -1,6 +1,6 @@
 from .utils.api import query_algolia, fetch_json
 from .constants import API_URL
-from .product import Product
+from .product import Product, Season
 
 from urllib.parse import urljoin
 
@@ -41,7 +41,7 @@ def get_home_recommendations(lang: str = "es") -> dict:
     Returns:
         dict: Dictionary where keys are section names (or "layout") and values are lists of recommended products.
     """
-    url = urljoin(API_URL, f"/api/home/?lang={lang}")
+    url = urljoin(API_URL, f"/api/home/?lang={lang}&wh=4115")
     response = fetch_json(url)
 
     sections = response.get("sections", [])
@@ -50,16 +50,20 @@ def get_home_recommendations(lang: str = "es") -> dict:
     section_products = {}
 
     for section in sections:
-        section_name = section.get(
-            "layout"
-        )
+        section_name = section.get("layout")
 
-        # Banners often aren't actual products but "seasons" or groups of products
-        if section_name != "banner":
-            items = section.get("content", {}).get("items", [])
+        items = section.get("content", {}).get("items", [])
 
-            products = [Product(item["id"]) for item in items]
-            section_products[section_name] = products
+        for item in items:
+            if item.get("bg_colors", None):
+                parsed_item = Season(item["id"], "4115")
+            else:
+                parsed_item = Product(item["id"])
+
+            if section_products.get(section_name, None):
+                section_products[section_name].append(parsed_item)
+            else:
+                section_products[section_name] = [parsed_item]
 
     return section_products
 
