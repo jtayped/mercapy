@@ -1,9 +1,7 @@
 from typing import Optional, Union
+import requests, json
 
-import requests
-import json
-
-from ..constants import ALGOLIA_APP_ID, ALGOLIA_API_KEY
+from ..constants import *
 
 
 def fetch_json(url: str, params: Optional[dict] = None) -> dict:

@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-import requests
-import os
+import requests, os
 
-from ..utils.urls import is_url, get_file_path
+from ..utils.urls import *
 
 
 @dataclass

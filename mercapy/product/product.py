@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from urllib.parse import urljoin
 from typing import List, Union, Literal
 
-from ..exceptions.product import *
 from ..constants import API_URL, NIJAR_POSTAL_CODE
 from ..utils.urls import get_file_path
 from ..utils.api import fetch_json
