@@ -7,7 +7,6 @@ ALGOLIA_API_KEY = "9d8f2e39e90df472b4f2e559a116fe17"  # Public API key
 # Almería distribution center
 NIJAR_POSTAL_CODE = "4115"
 
-# Most warehouses in Spain found with 
 WAREHOUSES = [
     "4115",
     "3532",
@@ -34,18 +33,4 @@ WAREHOUSES = [
     "4281",
     "mad1",
     "4308",
-    "2749",
-    "3947",
-    "3951",
-    "3996",
-    "4068",
-    "4069",
-    "4230",
-    "4267",
-    "4354",
-    "4385",
-    "4472",
-    "4558",
-    "4697",
-    "svq1",
 ]
