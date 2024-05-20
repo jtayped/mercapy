@@ -71,7 +71,9 @@ def get_home_recommendations(
     return section_products
 
 
-def get_new_arrivals(lang: str = "es") -> list[Product]:
+def get_new_arrivals(
+    lang: str = "es", warehouse_postal_code: str = NIJAR_POSTAL_CODE
+) -> list[Product]:
     """
     New product arrivals at Mercadona
 
@@ -81,8 +83,15 @@ def get_new_arrivals(lang: str = "es") -> list[Product]:
     Returns:
         list[Product]: List of new product arrivals.
     """
-    url = urljoin(API_URL, f"/api/home/new-arrivals/?lang={lang}")
+    url = urljoin(
+        API_URL, f"/api/home/new-arrivals/?lang={lang}&wh={warehouse_postal_code}"
+    )
     response = fetch_json(url)
 
-    products = [Product(item["id"]) for item in response.get("items")]
+    products = []
+    for item in response.get("items", []):
+        product = Product(item)
+        if product.exists():
+            products.append(product)
+
     return products
