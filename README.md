@@ -6,7 +6,7 @@
   <br>
 </h1>
 
-<h4 align="center">A Mercadona SDK for Python to track product prices, amounts, and more.</h4>
+<h4 align="center">A Mercadona interface for Python to track product prices, amounts, and more.</h4>
 
 <div align="center">
   <a href="https://pypi.org/project/mercapy/">
@@ -84,5 +84,5 @@ More docs coming soon...
 
 ## 🙋‍♂️ You may also like...
 
-- [📷📱 pygramcore](https://github.com/jtayped/pygramcore) - A simple-to-use Instagram SDK for Python using Selenium.
+- [📷📱 pygramcore](https://github.com/jtayped/pygramcore) - A simple-to-use Instagram interface for Python using Selenium.
 - [🧑‍💼My Portfolio](https://joeltaylor.business) - Check out my front-end and SEO skills on my Portfolio!
