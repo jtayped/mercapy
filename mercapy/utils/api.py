@@ -14,21 +14,15 @@ def fetch_json(url: str, params: dict = None) -> dict:
         dict: The JSON response as a dictionary, or an empty dictionary if there's an error.
     """
     try:
-        with requests.get(url, params=params, allow_redirects=False) as response:
-            response.raise_for_status()
+        response = requests.get(url, params=params, allow_redirects=False)
+        response.raise_for_status()
 
-            if response.ok:
-                return response.json()
-
+        return response.json()
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
-
-    return {}
+        return {"err_code": response.status_code, "err_message": e}
 
 
-def query_algolia(
-    query: str, warehouse: str = MAD1, lang: str = "es"
-) -> dict | None:
+def query_algolia(query: str, warehouse: str = MAD1, lang: str = "es") -> dict | None:
     """
     Queries Algolia for product data.
 

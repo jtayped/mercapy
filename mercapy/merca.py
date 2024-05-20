@@ -62,12 +62,8 @@ class Mercadona:
 
         products = []
         for h in hits:
-            product = Product(
-                h["id"],
-            )
+            product = Product(h["id"], self.warehouse, self.language)
 
-            # The search provider for Mercadona sometimes returns products that don't exists
-            # so before adding them to the list, it must be checked
             if product.exists():
                 products.append(product)
 

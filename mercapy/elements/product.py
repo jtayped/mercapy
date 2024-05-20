@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from urllib.parse import urljoin
 from typing import List, Union, Literal
+import time
 
 from ..constants import *
 from ..utils.urls import get_file_path
@@ -43,13 +44,31 @@ class Product:
 
         self._endpoint = urljoin(API_URL, f"/api/products/{self.id}")
 
-    def _fetch_data(self, override=False):
+    def _fetch_data(self, override=False, retry_attempts=3, retry_delay=10):
         if override or self._response is None:
-            self._response = fetch_json(
-                self._endpoint,
-                params={"lang": self.lang, "wh": self.warehouse},
-            )
-            self.id = self._response.get("id", self.id)
+            attempt = 0
+            while attempt < retry_attempts:
+                self._response = fetch_json(
+                    self._endpoint,
+                    params={"lang": self.lang, "wh": self.warehouse},
+                )
+                err_code = self._response.get("err_code")
+
+                if err_code is None:
+                    # No error, break out of the loop
+                    break
+                elif err_code == 429:
+                    # Too Many Requests, need to retry
+                    attempt += 1
+                    if attempt < retry_attempts:
+                        time.sleep(retry_delay)
+                        print(
+                            f"[{attempt}/{retry_attempts}]: Retrying to fetch {self.id} in {retry_delay} seconds..."
+                        )
+                elif err_code == 404:
+                    print(f"Couldn't find {self.id} :(")
+                    self._response = None
+                    break  # no need to retry
 
     def exists(self) -> bool:
         self._fetch_data()
@@ -96,7 +115,10 @@ class Product:
 
     @lazy_load_property
     def unit_price(self) -> float | None:
-        return float(self._response.get("price_instructions", {}).get("unit_price"))
+        try:
+            return float(self._response.get("price_instructions", {}).get("unit_price"))
+        except:
+            print(self._response)
 
     @lazy_load_property
     def bulk_price(self) -> float:
