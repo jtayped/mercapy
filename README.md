@@ -28,7 +28,6 @@
   <a href="#related">Related</a>
 </div>
 
-
 ## 🔧 How to use it
 
 First of all, install the package using:
@@ -37,23 +36,49 @@ First of all, install the package using:
 pip install mercapy
 ```
 
-Now you can start tracking multiple product's prices, availability, weight, etc.
+By initializing the mercadona class, you can search products, recommendations, and new arrivals:
+
+```python
+from mercapy import Mercadona
+
+mercadona = Mercadona()
+
+mercadona.search("galletas")
+mercadona.get_new_arrivals()
+mercadona.get_home_recommendations()
+```
+
+Each product has statistics such as:
+
 ```python
 from mercapy import Product
 
-water = Product("27335")
-print(water.ean)
-print(water.price)
-print(water.origin)
+# Find product by ID
+prod = Product("12345")
+
+prod.name               # Beer
+prod.unit_price         # 1.25€
+prod.previos_price      # 1.95€
+prod.is_discounted      # True
+prod.bulk_price         # 7.5€
+prod.is_pack            # True
+prod.weight             # 0.5kg
+prod.age_check          # True
+prod.alcohol_by_volume  # 3.2%
+prod.iva                # 21%
 ```
 
-And you can also get other recommended products:
+You can also interact with product photos:
+
 ```python
-# Get recommended product's prices
-recommeded = water.get_recommended()
-for product in recommeded:
-    print(product.price)
+from mercapy import Product
+
+# Find product by ID
+prod = Product("12345")
+prod.images[0].save("product.png", width=1920, height=1080)
 ```
+
+More docs coming soon...
 
 <div id="related"></div>
 
