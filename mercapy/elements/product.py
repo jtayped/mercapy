@@ -57,10 +57,10 @@ class Product:
 
     def get_recommended(self) -> List["Product"]:
         self._fetch_data()
-        endpoint = urljoin(self._endpoint, f"/xselling/")
+        endpoint = urljoin(API_URL, f"/api/products/{self.id}/xselling/")
         response = fetch_json(endpoint, params={"lang": self.lang})
-        results = response["results"]
-        return [Product(r.get("id")) for r in results]
+        results = response.get("results", [])
+        return [Product(r) for r in results]
 
     def refresh(self):
         self._response = fetch_json(self._endpoint, params={"lang": self.lang})
