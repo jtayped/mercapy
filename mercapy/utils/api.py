@@ -1,10 +1,8 @@
-from typing import Optional, Union
 import requests, json
-
 from ..constants import *
 
 
-def fetch_json(url: str, params: Optional[dict] = None) -> dict:
+def fetch_json(url: str, params: dict = None) -> dict:
     """
     Fetches JSON data from a given URL.
 
@@ -28,7 +26,9 @@ def fetch_json(url: str, params: Optional[dict] = None) -> dict:
     return {}
 
 
-def query_algolia(query: str, lang: str = "es") -> Union[dict, None]:
+def query_algolia(
+    query: str, warehouse: str = MAD1, lang: str = "es"
+) -> dict | None:
     """
     Queries Algolia for product data.
 
@@ -39,9 +39,7 @@ def query_algolia(query: str, lang: str = "es") -> Union[dict, None]:
     Returns:
         dict or None: The JSON response as a dictionary, or None if there's an error.
     """
-    url = (
-        f"https://7uzjkl1dj0-dsn.algolia.net/1/indexes/products_prod_4115_{lang}/query"
-    )
+    url = f"https://7uzjkl1dj0-dsn.algolia.net/1/indexes/products_prod_{warehouse}_{lang}/query"
 
     # Headers required for the request
     headers = {

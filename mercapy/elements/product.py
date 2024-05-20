@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from urllib.parse import urljoin
 from typing import List, Union, Literal
 
-from ..constants import API_URL, NIJAR_POSTAL_CODE
+from ..constants import *
 from ..utils.urls import get_file_path
 from ..utils.api import fetch_json
 from .photo import Photo
@@ -24,12 +24,12 @@ class Product:
 
     Args:
         id (str or dict): Product's identifier or information from Mercadona's API.
-        warehouse_postal_code (str): Warehouse or distribution center postal code. Defaults to the one in Níjar, Almería.
+        warehouse (str): Warehouse or distribution center postal code. Defaults to the one in Níjar, Almería.
         lang (str): The language in which the API responds. Defaults to spanish ("es"), and can also be english ("en").
     """
 
     id: Union[str, dict]
-    warehouse_postal_code: str = NIJAR_POSTAL_CODE
+    warehouse: str = MAD1
     lang: Literal["es", "en"] = "es"
     _endpoint: str = field(init=False, repr=False)
     _response: dict = field(default=None, init=False, repr=False)
@@ -47,7 +47,7 @@ class Product:
         if override or self._response is None:
             self._response = fetch_json(
                 self._endpoint,
-                params={"lang": self.lang, "wh": self.warehouse_postal_code},
+                params={"lang": self.lang, "wh": self.warehouse},
             )
             self.id = self._response.get("id", self.id)
 
@@ -59,7 +59,7 @@ class Product:
         self._fetch_data()
         endpoint = urljoin(API_URL, f"/api/products/{self.id}/xselling/")
         response = fetch_json(
-            endpoint, params={"lang": self.lang, "wh": self.warehouse_postal_code}
+            endpoint, params={"lang": self.lang, "wh": self.warehouse}
         )
         results = response.get("results", [])
         return [Product(r) for r in results]
