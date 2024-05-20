@@ -1,10 +1,24 @@
+"""
+This script performs a BFS (Breadth-First Search) across postal codes to find unique warehouse codes
+associated with Mercadona stores. It uses concurrent execution to speed up the process by fetching
+warehouse codes asynchronously using ThreadPoolExecutor.
+"""
+
 import requests
 from collections import deque
 import concurrent.futures
 
 
-# Function to get warehouse code for a given postal code
 def get_warehouse_code(postal_code):
+    """
+    Get warehouse code for a given postal code.
+
+    Args:
+        postal_code (str): The postal code to query.
+
+    Returns:
+        str or None: Warehouse code if found, None otherwise.
+    """
     url = "https://tienda.mercadona.es/api/postal-codes/actions/change-pc/"
     payload = {"new_postal_code": postal_code}
     headers = {"Content-Type": "application/json"}
@@ -18,13 +32,21 @@ def get_warehouse_code(postal_code):
     return None
 
 
-# Function to get neighboring postal codes
 def get_neighboring_postal_codes(postal_code):
+    """
+    Get neighboring postal codes by changing each digit.
+
+    Args:
+        postal_code (str): The postal code to find neighbors for.
+
+    Returns:
+        set: A set of neighboring postal codes.
+    """
     neighbors = set()
     postal_code_digits = list(postal_code)
-    for i in range(5):
+    for i in range(5):  # Iterate over each digit in the postal code
         original_digit = postal_code_digits[i]
-        for change in [-1, 1]:
+        for change in [-1, 1]:  # Change the digit by -1 and +1
             new_digit = (int(original_digit) + change) % 10
             postal_code_digits[i] = str(new_digit)
             neighbors.add("".join(postal_code_digits))
@@ -32,13 +54,22 @@ def get_neighboring_postal_codes(postal_code):
     return neighbors
 
 
-# BFS to explore postal codes and find unique warehouses
 def find_unique_warehouses(starting_postal_codes):
+    """
+    Perform BFS to explore postal codes and find unique warehouse codes.
+
+    Args:
+        starting_postal_codes (list): List of initial postal codes to start the search.
+
+    Returns:
+        set: Set of unique warehouse codes found.
+    """
     visited = set()
     unique_warehouses = set()
     queue = deque(starting_postal_codes)
     total_checked = 0
 
+    # Use ThreadPoolExecutor to run requests concurrently
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         futures = []
         while queue:
@@ -52,6 +83,7 @@ def find_unique_warehouses(starting_postal_codes):
                 f"Checking postal code: {current_postal_code} (Total checked: {total_checked})"
             )
 
+            # Submit the request to get warehouse code asynchronously
             futures.append(executor.submit(get_warehouse_code, current_postal_code))
 
             # Wait for some requests to complete before adding more
