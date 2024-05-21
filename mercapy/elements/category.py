@@ -18,7 +18,7 @@ class Category:
     def get_products(self):
         from .product import Product
 
-        url = urljoin(API_URL, "/api/categories/112/")
+        url = urljoin(API_URL, f"/api/categories/{self.id}/")
         response = fetch_json(url, {"lang": self.language, "wh": self.warehouse})
 
         category_products = []
