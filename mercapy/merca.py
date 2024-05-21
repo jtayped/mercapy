@@ -4,7 +4,7 @@ from urllib.parse import urljoin
 from .constants import WAREHOUSES, MAD1
 from .utils.warehouses import get_warehouse_code
 from .utils.api import *
-from .elements import Product, Season
+from .elements import Product, Season, Category
 
 
 class Mercadona:
@@ -126,3 +126,22 @@ class Mercadona:
                 products.append(product)
 
         return products
+
+    def get_categories(self) -> list[Category]:
+        url = urljoin(API_URL, "/api/categories/")
+        response = self._get_with_context(url)
+
+        # Get all level 1 categories
+        lvl1_categories = []
+
+        results = response.get("results", [])
+        for result in results:
+            categories = result.get("categories", [])
+            for category_data in categories:
+                id = category_data.get("id")
+                name = category_data.get("name")
+
+                category = Category(id, name, self.warehouse, self.language)
+                lvl1_categories.append(category)
+
+        return lvl1_categories
