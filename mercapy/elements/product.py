@@ -32,7 +32,7 @@ class Product:
     id: Union[str, dict]
     warehouse: str = MAD1
     lang: Literal["es", "en"] = "es"
-    _endpoint: str = field(init=False, repr=False)
+    _endpoint: str = field(default=None, init=False, repr=False)
     _response: dict = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
