@@ -121,9 +121,8 @@ class Mercadona:
 
         products = []
         for item in response.get("items", []):
-            product = Product(item)
-            if product.exists():
-                products.append(product)
+            product = Product(item, self.warehouse, self.language)
+            products.append(product)
 
         return products
 
