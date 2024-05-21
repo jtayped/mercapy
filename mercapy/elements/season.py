@@ -15,7 +15,7 @@ class Season(MercadonaItem):
             endpoint = f"/api/home/seasons/{id.get("id")}/"
         else:
             endpoint = f"/api/home/seasons/{id}/"
-            
+        
         super().__init__(id, endpoint, warehouse, language)
 
     @lazy_load_property
