@@ -5,8 +5,10 @@ from os import path
 # Read version from VERSION file
 here = path.abspath(path.dirname(__file__))
 
-VERSION = "0.2.0"
-DESCRIPTION = "A Mercadona interface for Python to track product prices, amounts, and more."
+VERSION = "0.3.0"
+DESCRIPTION = (
+    "A Mercadona interface for Python to track product prices, amounts, and more."
+)
 
 # Get the long description from the README file
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
