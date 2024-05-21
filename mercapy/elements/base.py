@@ -39,16 +39,14 @@ class MercadonaItem:
         if isinstance(self.id, dict):
             self._data = self.id
             self.id = self._data.get("id")
-        elif not isinstance(self.id, str):
-            raise ValueError("ID must be a string or a dict with data.")
 
     def _fetch_with_context(self, endpoint: str) -> dict:
         url = urljoin(API_URL, endpoint)
         return fetch_json(url, {"lang": self.language, "wh": self.warehouse})
 
-    def _fetch_data(self, retry_attempts: int = 3, retry_delay: int = 10) -> None:
+    def _fetch_data(self, retry_attempts: int = 3, retry_delay: int = 20) -> None:
         attempt = 0
-        while attempt < retry_attempts:
+        while attempt <= retry_attempts:
             self._data = self._fetch_with_context(self.endpoint)
             err_code = self._data.get("err_code")
 
@@ -58,11 +56,11 @@ class MercadonaItem:
             elif err_code == 429:
                 # Too Many Requests, retry
                 attempt += 1
-                if attempt < retry_attempts:
-                    print(
-                        f"[{attempt}/{retry_attempts}]: Retrying to fetch {self.id} in {retry_delay} seconds..."
-                    )
-                    time.sleep(retry_delay)
+                calculated_delay = attempt**2 * retry_delay
+                print(
+                    f"[{attempt}/{retry_attempts}]: Retrying to fetch {self} in {calculated_delay} seconds..."
+                )
+                time.sleep(calculated_delay)
             elif err_code == 404:
                 # Not Found, no need to retry
                 print(f"Couldn't find {self} :(")
