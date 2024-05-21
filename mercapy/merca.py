@@ -66,9 +66,7 @@ class Mercadona:
         products = []
         for h in hits:
             product = Product(h["id"], self.warehouse, self.language)
-
-            if product.exists():
-                products.append(product)
+            products.append(product)
 
         return products
 
