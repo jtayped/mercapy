@@ -92,15 +92,14 @@ class Mercadona:
 
             for item in items:
                 if item.get("bg_colors", None):
-                    parsed_item = Season(item["id"], self.warehouse, self.language)
+                    parsed_item = Season(str(item["id"]), self.warehouse, self.language)
                 else:
                     parsed_item = Product(item, self.warehouse, self.language)
 
-                if parsed_item.exists():
-                    if section_products.get(section_name, None):
-                        section_products[section_name].append(parsed_item)
-                    else:
-                        section_products[section_name] = [parsed_item]
+                if section_products.get(section_name, None):
+                    section_products[section_name].append(parsed_item)
+                else:
+                    section_products[section_name] = [parsed_item]
 
         return section_products
 
