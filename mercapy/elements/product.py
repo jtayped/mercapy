@@ -6,6 +6,17 @@ from ..utils.urls import get_file_path
 from .photo import Photo
 
 
+def require_complete_data(func):
+    def wrapper(self):
+        if self._is_data_incomplete():
+            self._fetch_data()
+
+        value = func(self)
+        return value
+
+    return wrapper
+
+
 class Product(MercadonaItem):
     def __init__(
         self,
@@ -13,17 +24,21 @@ class Product(MercadonaItem):
         warehouse: str = "mad1",
         language: Literal["es", "en"] = "es",
     ):
-        endpoint = f"/api/products/{id}/"
+        if isinstance(id, dict):
+            endpoint = f"/api/products/{id.get("id")}/"
+        else:
+            endpoint = f"/api/products/{id}/"
+
         super().__init__(id, endpoint, warehouse, language)
 
+    def _is_data_incomplete(self):
+        details = self._data.get("details", None)
+        if not details:
+            self._fetch_data()
+
     @lazy_load_property
+    @require_complete_data
     def ean(self) -> str:
-        ean = self._data.get("ean")
-
-        if not ean:
-            self._fetch_data(override=True)
-
-        ean = self._data.get("ean")
         return self._data.get("ean")
 
     @lazy_load_property
@@ -35,11 +50,8 @@ class Product(MercadonaItem):
         return self._data.get("slug")
 
     @lazy_load_property
+    @require_complete_data
     def legal_name(self) -> str:
-        details = self._data.get("details", None)
-        if not details:
-            self._fetch_data(override=True)
-
         details = self._data.get("details", {})
         return details.get("legal_name")
 
@@ -56,10 +68,8 @@ class Product(MercadonaItem):
         return self._data.get("price_instructions", {}).get("price_decreased")
 
     @lazy_load_property
+    @require_complete_data
     def previous_price(self) -> float | None:
-        if not self.is_discounted:
-            return None
-
         return self._data.get("price_instructions", {}).get("previous_unit_price")
 
     @lazy_load_property
@@ -71,11 +81,8 @@ class Product(MercadonaItem):
         return self._data.get("badges", {}).get("requires_age_check", False)
 
     @lazy_load_property
+    @require_complete_data
     def alcohol_by_volume(self) -> float | None:
-        details = self._data.get("details", None)
-        if not details:
-            self._fetch_data(override=True)
-
         details = self._data.get("details", {})
         percentage = details.get("alcohol_by_volume")
 
@@ -105,17 +112,14 @@ class Product(MercadonaItem):
         # the photo information. So fetching the data from the main product endpoint
         # the information can be populated.
         if not photos:
-            self._fetch_data(override=True)
+            self._fetch_data()
             photos = self._data.get("photos", [])
 
         return [Photo(get_file_path(p.get("regular"))) for p in photos]
 
     @lazy_load_property
+    @require_complete_data
     def description(self) -> str:
-        details = self._data.get("details", None)
-        if not details:
-            self._fetch_data(override=True)
-
         details = self._data.get("details", {})
         return details.get("description", "")
 
@@ -132,21 +136,15 @@ class Product(MercadonaItem):
         return self._data.get("brand")
 
     @lazy_load_property
+    @require_complete_data
     def origin(self) -> str:
-        details = self._data.get("details", None)
-        if not details:
-            self._fetch_data(override=True)
-
         details = self._data.get("details", {})
 
         return details.get("origin")
 
     @lazy_load_property
+    @require_complete_data
     def suppliers(self) -> list[str]:
-        details = self._data.get("details", None)
-        if not details:
-            self._fetch_data(override=True)
-
         details = self._data.get("details", {})
         suppliers = details.get("suppliers", [])
         return [s["name"] for s in suppliers]
