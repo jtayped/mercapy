@@ -11,7 +11,11 @@ class Season(MercadonaItem):
         warehouse: str = "mad1",
         language: Literal["es", "en"] = "es",
     ):
-        endpoint = f"/api/home/seasons/{id}/"
+        if isinstance(id, dict):
+            endpoint = f"/api/home/seasons/{id.get("id")}/"
+        else:
+            endpoint = f"/api/home/seasons/{id}/"
+            
         super().__init__(id, endpoint, warehouse, language)
 
     @lazy_load_property
