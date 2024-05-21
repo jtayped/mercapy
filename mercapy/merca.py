@@ -46,6 +46,9 @@ class Mercadona:
                     "The postcode specified isn't available in Mercadona's network... Try using any of the warehouse codes in constants.WAREHOUSES."
                 )
 
+    def _get_with_context(self, url: str):
+        return fetch_json(url, {"lang": self.language, "wh": self.warehouse})
+
     def search(self, query: str) -> list[Product]:
         """
         Queries Mercadona's products using their provider "Algolia".
@@ -77,7 +80,7 @@ class Mercadona:
             dict: Dictionary where keys are layout names and values are lists of recommended products. The lists of products can also include banners which often are Season objects.
         """
         url = urljoin(API_URL, f"/api/home/")
-        response = fetch_json(url, {"lang": self.language, "wh": self.warehouse})
+        response = self._get_with_context(url)
 
         sections = response.get("sections", [])
 
@@ -114,7 +117,7 @@ class Mercadona:
             list[Product]: List of new product arrivals.
         """
         url = urljoin(API_URL, f"/api/home/new-arrivals/")
-        response = fetch_json(url, {"lang": self.language, "wh": self.warehouse})
+        response = self._get_with_context(url)
 
         products = []
         for item in response.get("items", []):
