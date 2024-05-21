@@ -35,8 +35,8 @@ class Season:
     def __post_init__(self):
         self._endpoint = f"https://tienda.mercadona.es/api/home/seasons/{self.id}/"
 
-    def _fetch_data(self):
-        if self._response is None:
+    def _fetch_data(self, override=False):
+        if override or self._response is None:
             self._response = fetch_json(
                 self._endpoint,
                 params={"lang": self.lang, "wh": self.warehouse},
