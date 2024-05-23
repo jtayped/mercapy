@@ -218,7 +218,9 @@ class Product(MercadonaItem):
         """
         details = self._data.get("details", {})
         suppliers = details.get("suppliers", [])
-        return suppliers[0].get("name")
+
+        if suppliers:
+            return suppliers[0].get("name")
 
     @lazy_load_property
     def category(self) -> list[str]:
