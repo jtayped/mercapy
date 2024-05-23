@@ -212,7 +212,7 @@ class Product(MercadonaItem):
 
     @lazy_load_property
     @require_complete_data
-    def supplier(self) -> str:
+    def supplier(self) -> str | None:
         """
         Returns the supplier of the product.
         """
