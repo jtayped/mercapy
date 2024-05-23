@@ -24,7 +24,8 @@ class Mercadona:
         """
         self.language = language
 
-        if self.postcode in WAREHOUSES:
+        if postcode in WAREHOUSES:
+            self.postcode = postcode
             self.warehouse = self.postcode
         else:
             self.postcode = postcode
