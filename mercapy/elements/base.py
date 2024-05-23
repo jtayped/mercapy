@@ -12,6 +12,10 @@ def lazy_load_property(func):
     def wrapper(self):
         if self._is_empty():
             self._fetch_data()
+        
+        if self.not_found():
+            return None
+        
         return func(self)
 
     return wrapper
