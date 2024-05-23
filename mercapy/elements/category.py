@@ -7,7 +7,7 @@ class Category(MercadonaItem):
         self,
         id: str | dict,
         name: str,
-        warehouse: str = "mad1",
+        warehouse: str,
         language: Literal["es", "en"] = "es",
     ):
         self.name = name

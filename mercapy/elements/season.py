@@ -8,7 +8,7 @@ class Season(MercadonaItem):
     def __init__(
         self,
         id: str | dict,
-        warehouse: str = "mad1",
+        warehouse: str,
         language: Literal["es", "en"] = "es",
     ):
         if isinstance(id, dict):

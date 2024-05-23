@@ -22,7 +22,7 @@ def fetch_json(url: str, params: dict = None) -> dict:
         return {"err_code": response.status_code, "err_message": e}
 
 
-def query_algolia(query: str, warehouse: str = MAD1, lang: str = "es") -> dict | None:
+def query_algolia(query: str, warehouse: str, lang: str = "es") -> dict | None:
     """
     Queries Algolia for product data.
 

@@ -45,5 +45,3 @@ WAREHOUSES = [
     "4558",
     "4697",
 ]
-
-MAD1 = WAREHOUSES[0]

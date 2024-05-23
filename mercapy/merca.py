@@ -1,7 +1,7 @@
 from typing import Literal
 from urllib.parse import urljoin
 
-from .constants import WAREHOUSES, MAD1
+from .constants import WAREHOUSES
 from .utils.warehouses import get_warehouse_code
 from .utils.api import *
 from .elements import Product, Season, Category
@@ -17,7 +17,7 @@ class Mercadona:
             "bcn1",
             "alc1",
             "vlc1",
-        ] = MAD1,
+        ],
         language: Literal["es", "en"] = "es",
     ) -> None:
         """

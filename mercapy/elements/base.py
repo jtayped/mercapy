@@ -12,10 +12,10 @@ def lazy_load_property(func):
     def wrapper(self):
         if self._is_empty():
             self._fetch_data()
-        
+
         if self.not_found():
             return None
-        
+
         return func(self)
 
     return wrapper
@@ -29,7 +29,7 @@ class MercadonaItem:
     Args:
         id (str | dict): Season identifier.
         endpoint (str): API endpoint to fetch data from.
-        warehouse (str): Warehouse or distribution center postal code. Defaults to "mad1".
+        warehouse (str): Warehouse or distribution center postal code.
         language (str): Language for the API response. Defaults to "es".
     """
 
