@@ -6,12 +6,9 @@ class Category(MercadonaItem):
     def __init__(
         self,
         id: str | dict,
-        name: str,
         warehouse: str = "mad1",
         language: Literal["es", "en"] = "es",
     ):
-        self.name = name
-
         if isinstance(id, dict):
             endpoint = f"/api/categories/{id.get("id")}/"
         else:
@@ -33,3 +30,7 @@ class Category(MercadonaItem):
                 category_products.append(product)
 
         return category_products
+
+    @lazy_load_property
+    def name(self):
+        return self._data.get("name")
