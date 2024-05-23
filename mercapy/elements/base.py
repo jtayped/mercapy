@@ -67,10 +67,12 @@ class MercadonaItem:
             elif err_code == 429:
                 # Too Many Requests, retry
                 attempt += 1
+                if attempt > retry_attempts:
+                    print(
+                        f"Exceeded maximum retry attempts ({retry_attempts}) for {self}."
+                    )
+                    break
                 calculated_delay = attempt**2 * retry_delay
-                print(
-                    f"[{attempt}/{retry_attempts}]: Retrying to fetch {self} in {calculated_delay} seconds..."
-                )
                 time.sleep(calculated_delay)
             elif err_code == 404:
                 # Not Found, no need to retry
