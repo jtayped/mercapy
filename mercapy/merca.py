@@ -11,13 +11,7 @@ class Mercadona:
 
     def __init__(
         self,
-        warehouse: Literal[
-            "mad1",
-            "mad2",
-            "bcn1",
-            "alc1",
-            "vlc1",
-        ],
+        postcode: str,
         language: Literal["es", "en"] = "es",
     ) -> None:
         """
@@ -25,26 +19,16 @@ class Mercadona:
         A postcode that isn't a Mercadona warehouse will be treated as a city postcode, and will find the closes warehouse to the population if any.
 
         Args:
-            warehouse (str): The target warehouse to retrieve products from. It can also be a city postcode which Mercadona can deliver too. Defaults to "mad1", in Madrid. More warehouses are available in constants.WAREHOUSES.
+            postcode (str): The postcode from where products are being accessed. From there, the closest warehouse will be found. Warehouse codes are accepted too (e.g. "mad1", "vlc1", etc.)
             language (str): The language of the information recieved. Defaults to "es": Spanish. Can also be "en": English.
-
-        Raises:
-            ValueError: Raises when a postcode is not in Mercadona's network.
         """
         self.language = language
-        self.warehouse = warehouse
 
-        # If the warehouse code is not in the list of warehouses, it means that it
-        # is most probably a postcode.
-        if self.warehouse not in WAREHOUSES:
-            # Get closest warehouse to the postcode
-            self.warehouse = get_warehouse_code(self.warehouse)
-
-            # Raise error if the postcode isn't in Mercadona's network
-            if self.warehouse is None:
-                raise ValueError(
-                    "The postcode specified isn't available in Mercadona's network... Try using any of the warehouse codes in constants.WAREHOUSES."
-                )
+        if self.postcode in WAREHOUSES:
+            self.warehouse = self.postcode
+        else:
+            self.postcode = postcode
+            self.warehouse = get_warehouse_code(self.postcode)
 
     def _get_with_context(self, url: str):
         return fetch_json(url, {"lang": self.language, "wh": self.warehouse})
@@ -138,3 +122,6 @@ class Mercadona:
                 lvl1_categories.append(category)
 
         return lvl1_categories
+
+    def get_catalog(self) -> list[Product]:
+        return [p for c in self.get_categories() for p in c.products]
