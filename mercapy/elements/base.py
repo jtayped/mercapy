@@ -33,12 +33,19 @@ class MercadonaItem:
     endpoint: str = field(repr=False)
     warehouse: str = "mad1"
     language: Literal["es", "en"] = field(default="es", init=True, repr=False)
-    _data: dict = field(init=False, default=None, repr=False)
 
     def __post_init__(self):
+        self._data = {}
+
         if isinstance(self.id, dict):
             self._data = self.id
             self.id = self._data.get("id")
+
+    def not_found(self):
+        if self._is_empty():
+            self._fetch_data()
+
+        return bool(self._data.get("err_code"))
 
     def _fetch_with_context(self, endpoint: str) -> dict:
         url = urljoin(API_URL, endpoint)
@@ -64,12 +71,10 @@ class MercadonaItem:
             elif err_code == 404:
                 # Not Found, no need to retry
                 print(f"Couldn't find {self} :(")
-                self._data = None
                 break
             else:
                 # Other errors, stop retrying
                 print(f"Error fetching data for {self}.")
-                self._data = None
                 break
 
     def _is_empty(self):

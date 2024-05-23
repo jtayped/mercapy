@@ -32,9 +32,11 @@ class Product(MercadonaItem):
         super().__init__(id, endpoint, warehouse, language)
 
     def _is_data_incomplete(self):
-        details = self._data.get("details", None)
-        if not details:
-            self._fetch_data()
+        if self._data is None:
+            return True
+        
+        details = self._data.get("details", {})
+        return not details
 
     @lazy_load_property
     @require_complete_data
