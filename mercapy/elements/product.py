@@ -1,6 +1,7 @@
 from typing import Literal
 
 from .base import MercadonaItem, lazy_load_property
+from .category import Category
 from ..constants import *
 from ..utils.urls import get_file_path
 from .photo import Photo
@@ -152,6 +153,9 @@ class Product(MercadonaItem):
         return [s["name"] for s in suppliers]
 
     @lazy_load_property
-    def categories(self) -> list[str]:
-        categories = self._data.get("categories", [])
-        return [c["name"] for c in categories]
+    def category(self) -> list[str]:
+        high_level_category = self._data.get("categories", [])[0]
+        category_data = high_level_category.get("categories", [])[0]
+        
+        category = Category(category_data, self.warehouse, self.language)
+        return category

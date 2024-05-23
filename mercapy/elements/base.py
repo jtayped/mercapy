@@ -43,7 +43,7 @@ class MercadonaItem:
 
         if isinstance(self.id, dict):
             self._data = self.id
-            self.id = self._data.get("id")
+            self.id = str(self._data.get("id"))
 
     def not_found(self):
         if self._is_empty():

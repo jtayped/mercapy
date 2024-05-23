@@ -133,11 +133,8 @@ class Mercadona:
         results = response.get("results", [])
         for result in results:
             categories = result.get("categories", [])
-            for category_data in categories:
-                id = category_data.get("id")
-                name = category_data.get("name")
-
-                category = Category(id, name, self.warehouse, self.language)
+            for c in categories:
+                category = Category(c, self.warehouse, self.language)
                 lvl1_categories.append(category)
 
         return lvl1_categories
