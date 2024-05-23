@@ -16,7 +16,7 @@ class Category(MercadonaItem):
     def __init__(
         self,
         id: str | dict,
-        warehouse: str = "mad1",
+        warehouse: str,
         language: Literal["es", "en"] = "es",
     ):
         if isinstance(id, dict):
@@ -26,12 +26,9 @@ class Category(MercadonaItem):
 
         super().__init__(id, endpoint, warehouse, language)
 
-    def _is_data_incomplete(self):
-        subcategories = self._data.get("categories", [])
-
-        # Check if there are any products in the first category
-        products = subcategories[0].get("prodcuts", None)
-        return products is None
+    def _is_data_incomplete(self):      
+        subcategories = self._data.get("categories", None)
+        return subcategories is None
 
     @lazy_load_property
     @require_complete_data
