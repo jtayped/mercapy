@@ -19,11 +19,12 @@ class Category(MercadonaItem):
     @lazy_load_property
     def products(self):
         from .product import Product
+        print(self._data)
 
         category_products = []
         subcategories = self._data.get("categories", [])
         for subcategory in subcategories:
-            products = subcategory.get("products", [])
+            products = subcategory.get("products", None)
 
             for product_data in products:
                 product = Product(product_data, self.warehouse, self.language)
