@@ -108,16 +108,16 @@ class Product(MercadonaItem):
         return self._data.get("price_instructions", {}).get("pack_size")
 
     @lazy_load_property
+    def total_units(self):
+        if not self.is_pack:
+            return None
+        
+        return self._data.get("price_instructions", {}).get("total_units")
+
+    @lazy_load_property
+    @require_complete_data
     def photos(self) -> list[Photo]:
         photos = self._data.get("photos", [])
-
-        # If photos aren't found, it is probable that a dict was provided without
-        # the photo information. So fetching the data from the main product endpoint
-        # the information can be populated.
-        if not photos:
-            self._fetch_data()
-            photos = self._data.get("photos", [])
-
         return [Photo(get_file_path(p.get("regular"))) for p in photos]
 
     @lazy_load_property
@@ -128,7 +128,7 @@ class Product(MercadonaItem):
 
     @lazy_load_property
     def minimum_amount(self) -> int:
-        return self._data.get("price_instructions", {}).get("min_bunch_amount", 1)
+        return int(self._data.get("price_instructions", {}).get("min_bunch_amount", 1))
 
     @lazy_load_property
     def weight(self) -> float:
@@ -147,10 +147,10 @@ class Product(MercadonaItem):
 
     @lazy_load_property
     @require_complete_data
-    def suppliers(self) -> list[str]:
+    def supplier(self) -> list[str]:
         details = self._data.get("details", {})
         suppliers = details.get("suppliers", [])
-        return [s["name"] for s in suppliers]
+        return suppliers[0].get("name")
 
     @lazy_load_property
     def category(self) -> list[str]:
@@ -159,3 +159,31 @@ class Product(MercadonaItem):
         
         category = Category(category_data, self.warehouse, self.language)
         return category
+    
+    def __dict__(self):
+        return {
+            "id": self.id,
+            "warehouse": self.warehouse,
+            "language": self.language,
+            "ean": self.ean,
+            "name": self.name,
+            "slug": self.slug,
+            "legal_name": self.legal_name,
+            "unit_price": self.unit_price,
+            "bulk_price": self.bulk_price,
+            "is_discounted": self.is_discounted,
+            "previous_price": self.previous_price,
+            "iva": self.iva,
+            "age_check": self.age_check,
+            "alcohol_by_volume": self.alcohol_by_volume,
+            "is_new": self.is_new,
+            "is_pack": self.is_pack,
+            "pack_size": self.pack_size,
+            "description": self.description,
+            "minimum_amount": self.minimum_amount,
+            "weight": self.weight,
+            "brand": self.brand,
+            "origin": self.origin,
+            "supplier": self.supplier,
+            "category": self.category.name
+        }
