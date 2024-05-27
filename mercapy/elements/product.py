@@ -11,6 +11,8 @@ def require_complete_data(func):
     def wrapper(self):
         if self._is_data_incomplete():
             self._fetch_data()
+        if self.not_found():
+            return None
 
         value = func(self)
         return value
@@ -214,13 +216,13 @@ class Product(MercadonaItem):
     @require_complete_data
     def supplier(self) -> str | None:
         """
-        Returns the supplier of the product.
+        Returns the main supplier of the product.
         """
         details = self._data.get("details", {})
         suppliers = details.get("suppliers", [])
 
         if suppliers:
-            return suppliers[0].get("name")
+            return suppliers[0]["name"]
 
     @lazy_load_property
     def category(self) -> list[str]:
@@ -233,6 +235,7 @@ class Product(MercadonaItem):
         category = Category(category_data, self.warehouse, self.language)
         return category
     
+    @require_complete_data
     def __dict__(self):
         """
         Converts the product object to a dictionary.
