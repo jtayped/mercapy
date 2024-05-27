@@ -81,6 +81,7 @@ class MercadonaItem:
             else:
                 # Other errors, stop retrying
                 print(f"Error fetching data for {self}.")
+                print(self._data)
                 break
 
     def _is_empty(self):
