@@ -236,9 +236,9 @@ class Product(MercadonaItem):
         return category
     
     @require_complete_data
-    def __dict__(self):
+    def __dict__(self) -> dict | None:
         """
-        Converts the product object to a dictionary.
+        Converts the product object to a dictionary if the product has been found, returns None if not.
         """
         return {
             "id": self.id,
