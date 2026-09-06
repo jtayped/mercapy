@@ -1,11 +1,11 @@
-# Migrating from Mercapy V1 to V2
+# migrating from mercapy v1 to v2
 
-Version 2 is a clean break. It has no compatibility aliases, and V1 code should
-be updated before changing the dependency constraint.
+version 2 is a clean break. it has no compatibility aliases. update application
+code before changing the dependency constraint.
 
-## API changes
+## api replacements
 
-| V1 | V2 |
+| v1 | v2 |
 | --- | --- |
 | `Mercadona(postcode)` | `Mercadona.from_postal_code(postcode)` |
 | `Mercadona(warehouse_or_postcode)` | `Mercadona(warehouse)` for a known warehouse |
@@ -25,11 +25,11 @@ be updated before changing the dependency constraint.
 | `photo.save(path, ...)` | `mercadona.download_photo(photo, path, ...)` |
 | `product.__dict__()` | `dataclasses.asdict(product)` when a dictionary is required |
 
-## Explicit requests
+## explicit requests
 
-V1 models fetched missing data when properties were read. V2 model attributes
-never perform I/O. Listing methods return `ProductSummary`; use `get_product()`
-for complete product data.
+v1 models could fetch data when an attribute was read. v2 model attributes never
+perform i/o. listing methods return `ProductSummary`; call `get_product()` when
+complete product data is required.
 
 ```python
 from mercapy import Mercadona
@@ -40,26 +40,32 @@ with Mercadona.from_postal_code("28001") as mercadona:
     product = mercadona.get_product(summary.id)
 ```
 
-This change also removes the hidden N+1 request pattern from normal attribute
-access. Calls that intentionally aggregate data, chiefly `get_catalog()`, state
-their request behavior in the README.
+the example performs three requests: postcode resolution, search, and product
+detail. v2 no longer hides the last request behind attribute access. see the
+[request table](docs/reliability.md#request-counts) before processing a full
+catalog.
 
-## Values and errors
+## value changes
 
-- Lists returned by V1 are tuples in V2.
-- Prices and numeric quantities are `Decimal`, not `float`.
-- IDs are strings even when the API sends a number.
-- Models are frozen and have no writable `__dict__`.
-- Request failures raise a `MercapyError` subclass. No method prints an error or
-  returns a fabricated error dictionary.
-- `search_products()` returns `SearchResult`, including page metadata.
-- Home sections remain ordered records. Sections with matching layouts are not
-  merged.
+- v1 lists are tuples in v2.
+- prices and numeric quantities use `Decimal`, not `float`.
+- ids are strings even when the upstream api sends a number.
+- models are frozen and do not have a writable `__dict__`.
+- `search_products()` returns `SearchResult` with pagination metadata.
+- home sections preserve their source order. sections with the same layout stay
+  separate.
 
-## Client lifetime
+## error changes
 
-V2 keeps an HTTP connection pool. Close clients explicitly or use a context
-manager:
+request failures raise a `MercapyError` subclass. methods no longer print errors
+or return fabricated error dictionaries. catch the narrowest exception that an
+application can handle. the [reliability guide](docs/reliability.md#error-model)
+defines the exception hierarchy.
+
+## client lifetime
+
+v2 keeps an http connection pool. use a context manager or call `close()` when
+the client is no longer needed.
 
 ```python
 from mercapy import Mercadona

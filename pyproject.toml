@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mercapy"
 dynamic = ["version"]
-description = "A synchronous, typed client for Mercadona's public storefront APIs"
+description = "a synchronous, typed client for mercadona's public storefront apis"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
@@ -35,11 +35,17 @@ dev = [
   "ruff>=0.11",
   "twine>=6.1",
 ]
+docs = [
+  "mkdocs>=1.6.1,<2",
+  "mkdocstrings[python]>=1.0.6,<2",
+]
 
 [project.urls]
 Homepage = "https://github.com/jtayped/mercapy"
+Documentation = "https://jtayped.github.io/mercapy/"
 Issues = "https://github.com/jtayped/mercapy/issues"
 Repository = "https://github.com/jtayped/mercapy"
+Changelog = "https://github.com/jtayped/mercapy/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
 path = "src/mercapy/_version.py"
@@ -53,7 +59,7 @@ line-length = 88
 src = ["src", "tests", "scripts"]
 
 [tool.ruff.lint]
-select = ["B", "C4", "E", "F", "I", "N", "PERF", "RUF", "SIM", "UP"]
+select = ["B", "C4", "E", "F", "I", "N", "PERF", "RUF", "S", "SIM", "UP"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]

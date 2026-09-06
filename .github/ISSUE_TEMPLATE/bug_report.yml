@@ -1,0 +1,58 @@
+name: bug report
+description: report reproducible behavior in mercapy
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        thanks for taking the time to report a bug. remove credentials, personal data, and unnecessary live api responses before submitting it.
+  - type: input
+    id: mercapy_version
+    attributes:
+      label: mercapy version
+      placeholder: 2.0.0
+    validations:
+      required: true
+  - type: input
+    id: python_version
+    attributes:
+      label: python version
+      placeholder: 3.14.1
+    validations:
+      required: true
+  - type: input
+    id: operation
+    attributes:
+      label: client operation
+      description: name the method that failed and whether you used a warehouse or postcode.
+      placeholder: Mercadona.get_product with warehouse mad3
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: minimal reproduction
+      description: provide the smallest example that shows the problem.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: actual behavior
+      description: include the complete traceback when one is available.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: additional context
+      description: add sanitized response details or other context only when it helps reproduce the issue.

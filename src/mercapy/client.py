@@ -1,4 +1,4 @@
-"""Synchronous Mercadona client."""
+"""synchronous mercadona client."""
 
 from __future__ import annotations
 
@@ -13,6 +13,8 @@ from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from math import isfinite
 from pathlib import Path
+from random import SystemRandom
+from threading import Lock
 from types import TracebackType
 from typing import Any, Self
 from urllib.parse import quote, urlencode
@@ -50,27 +52,52 @@ from .models import (
 _WAREHOUSE_PATTERN = re.compile(r"^[a-z0-9]{2,16}$")
 _POSTAL_CODE_PATTERN = re.compile(r"^(?:0[1-9]|[1-4][0-9]|5[0-2])\d{3}$")
 _RETRYABLE_STATUS_CODES = frozenset({500, 502, 503, 504})
+_JITTER = SystemRandom()
 
 
 @dataclass(frozen=True, slots=True)
 class RetryPolicy:
-    """Bounded retry settings for connection and transient HTTP failures."""
+    """bounded retry settings for connection and transient http failures."""
 
     max_attempts: int = 3
     backoff_factor: float = 0.25
     max_delay: float = 5.0
+    jitter_ratio: float = 0.1
 
     def __post_init__(self) -> None:
+        if isinstance(self.max_attempts, bool) or not isinstance(
+            self.max_attempts, int
+        ):
+            raise ConfigurationError("max_attempts must be an integer")
         if self.max_attempts < 1:
             raise ConfigurationError("max_attempts must be at least one")
-        if self.backoff_factor < 0:
-            raise ConfigurationError("backoff_factor cannot be negative")
-        if self.max_delay < 0:
-            raise ConfigurationError("max_delay cannot be negative")
+        if (
+            isinstance(self.backoff_factor, bool)
+            or not isinstance(self.backoff_factor, (int, float))
+            or not isfinite(self.backoff_factor)
+            or self.backoff_factor < 0
+        ):
+            raise ConfigurationError(
+                "backoff_factor must be a finite non-negative number"
+            )
+        if (
+            isinstance(self.max_delay, bool)
+            or not isinstance(self.max_delay, (int, float))
+            or not isfinite(self.max_delay)
+            or self.max_delay < 0
+        ):
+            raise ConfigurationError("max_delay must be a finite non-negative number")
+        if (
+            isinstance(self.jitter_ratio, bool)
+            or not isinstance(self.jitter_ratio, (int, float))
+            or not isfinite(self.jitter_ratio)
+            or not 0 <= self.jitter_ratio <= 1
+        ):
+            raise ConfigurationError("jitter_ratio must be between zero and one")
 
 
 def validate_postal_code(postal_code: str) -> str:
-    """Validate and return a five-digit Spanish postal code."""
+    """validate and return a five-digit spanish postal code."""
 
     if not isinstance(postal_code, str) or not _POSTAL_CODE_PATTERN.fullmatch(
         postal_code
@@ -123,8 +150,26 @@ def _validate_timeout(timeout: float | httpx.Timeout) -> float | httpx.Timeout:
     return value
 
 
+def _validate_request_interval(value: float) -> float:
+    if isinstance(value, bool):
+        raise ConfigurationError(
+            "min_request_interval must be a finite non-negative number"
+        )
+    try:
+        interval = float(value)
+    except (TypeError, ValueError) as error:
+        raise ConfigurationError(
+            "min_request_interval must be a finite non-negative number"
+        ) from error
+    if not isfinite(interval) or interval < 0:
+        raise ConfigurationError(
+            "min_request_interval must be a finite non-negative number"
+        )
+    return interval
+
+
 class Mercadona:
-    """A reusable synchronous client scoped to one Mercadona warehouse."""
+    """a reusable synchronous client scoped to one mercadona warehouse."""
 
     def __init__(
         self,
@@ -133,6 +178,7 @@ class Mercadona:
         language: Language | str = Language.SPANISH,
         timeout: float | httpx.Timeout = 10.0,
         retry_policy: RetryPolicy | None = None,
+        min_request_interval: float = 0.0,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         self._warehouse = _validate_warehouse(warehouse)
@@ -141,6 +187,9 @@ class Mercadona:
         except ValueError as error:
             raise ConfigurationError("language must be 'es' or 'en'") from error
         self._retry_policy = retry_policy or RetryPolicy()
+        self._min_request_interval = _validate_request_interval(min_request_interval)
+        self._request_lock = Lock()
+        self._last_request_started_at: float | None = None
         timeout_config = _validate_timeout(timeout)
         try:
             self._client = httpx.Client(
@@ -165,9 +214,10 @@ class Mercadona:
         language: Language | str = Language.SPANISH,
         timeout: float | httpx.Timeout = 10.0,
         retry_policy: RetryPolicy | None = None,
+        min_request_interval: float = 0.0,
         transport: httpx.BaseTransport | None = None,
     ) -> Self:
-        """Resolve a postal code with one request and return a scoped client."""
+        """resolve a postal code with one request and return a scoped client."""
 
         postal_code = validate_postal_code(postal_code)
         client = cls(
@@ -175,6 +225,7 @@ class Mercadona:
             language=language,
             timeout=timeout,
             retry_policy=retry_policy,
+            min_request_interval=min_request_interval,
             transport=transport,
         )
         try:
@@ -196,17 +247,31 @@ class Mercadona:
 
     @property
     def warehouse(self) -> str:
+        """return the normalized warehouse code."""
+
         return self._warehouse
 
     @property
     def language(self) -> Language:
+        """return the selected storefront language."""
+
         return self._language
 
     @property
     def is_closed(self) -> bool:
+        """return whether the client has been closed."""
+
         return self._closed
 
+    @property
+    def min_request_interval(self) -> float:
+        """return the minimum time between request starts in seconds."""
+
+        return self._min_request_interval
+
     def close(self) -> None:
+        """close the http connection pool."""
+
         if not self._closed:
             self._client.close()
             self._closed = True
@@ -226,6 +291,8 @@ class Mercadona:
     def search_products(
         self, query: str, *, page: int = 0, page_size: int = 20
     ) -> SearchResult:
+        """search one zero-based page of product summaries."""
+
         if not isinstance(query, str):
             raise ConfigurationError("query must be a string")
         if isinstance(page, bool) or not isinstance(page, int) or page < 0:
@@ -256,11 +323,15 @@ class Mercadona:
         )
 
     def get_product(self, product_id: str | int) -> Product:
+        """return a complete product record by id."""
+
         product_id = _validate_identifier(product_id, "product_id")
         data = self._get_api_json(f"/api/products/{quote(product_id, safe='')}/")
         return parse_product(data)
 
     def get_categories(self) -> tuple[Category, ...]:
+        """return the storefront category tree."""
+
         data = self._get_api_json("/api/categories/")
         results = data.get("results")
         if not isinstance(results, list):
@@ -268,11 +339,15 @@ class Mercadona:
         return tuple(parse_category(item) for item in results)
 
     def get_category(self, category_id: str | int) -> Category:
+        """return one category by id."""
+
         category_id = _validate_identifier(category_id, "category_id")
         data = self._get_api_json(f"/api/categories/{quote(category_id, safe='')}/")
         return parse_category(data)
 
     def get_catalog(self) -> tuple[ProductSummary, ...]:
+        """collect deduplicated summaries from all listed category groups."""
+
         products: list[ProductSummary] = []
         seen: set[str] = set()
 
@@ -291,6 +366,8 @@ class Mercadona:
         return tuple(products)
 
     def get_new_arrivals(self) -> tuple[ProductSummary, ...]:
+        """return the current new-arrival product summaries."""
+
         data = self._get_api_json("/api/home/new-arrivals/")
         items = data.get("items")
         if not isinstance(items, list):
@@ -298,6 +375,8 @@ class Mercadona:
         return tuple(parse_product_summary(item) for item in items)
 
     def get_home(self) -> tuple[HomeSection, ...]:
+        """return ordered storefront home sections."""
+
         data = self._get_api_json("/api/home/")
         sections = data.get("sections")
         if not isinstance(sections, list):
@@ -305,6 +384,8 @@ class Mercadona:
         return tuple(parse_home_section(section) for section in sections)
 
     def get_season(self, season_id: str) -> Season:
+        """return one seasonal product collection by id."""
+
         season_id = _validate_identifier(season_id, "season_id")
         data = self._get_api_json(f"/api/home/sections/{quote(season_id, safe='')}/")
         return parse_season(data, season_id)
@@ -318,6 +399,8 @@ class Mercadona:
         height: int | None = None,
         fit: PhotoFit | str = PhotoFit.CROP,
     ) -> Path:
+        """download a photo through an atomic destination replacement."""
+
         if not isinstance(photo, Photo):
             raise ConfigurationError("photo must be a Photo instance")
         url = photo.url(width=width, height=height, fit=fit)
@@ -398,14 +481,17 @@ class Mercadona:
         url: str,
     ) -> httpx.Response:
         self._ensure_open()
-        last_connection_error: httpx.RequestError | None = None
         for attempt in range(self._retry_policy.max_attempts):
+            self._wait_for_request_slot()
             try:
                 response = send()
             except (httpx.ConnectError, httpx.ConnectTimeout) as error:
-                last_connection_error = error
                 if attempt + 1 == self._retry_policy.max_attempts:
-                    break
+                    raise TransportError(
+                        f"{method} {url} failed after "
+                        f"{self._retry_policy.max_attempts} connection attempts: "
+                        f"{error}"
+                    ) from error
                 time.sleep(self._backoff(attempt))
                 continue
             except httpx.RequestError as error:
@@ -437,11 +523,7 @@ class Mercadona:
             self._raise_for_status(response, method=method, url=url)
             return response
 
-        assert last_connection_error is not None
-        raise TransportError(
-            f"{method} {url} failed after {self._retry_policy.max_attempts} "
-            f"connection attempts: {last_connection_error}"
-        ) from last_connection_error
+        raise RuntimeError("retry loop ended without a response")  # pragma: no cover
 
     def _raise_for_status(
         self, response: httpx.Response, *, method: str, url: str
@@ -458,7 +540,24 @@ class Mercadona:
 
     def _backoff(self, attempt: int) -> float:
         delay = self._retry_policy.backoff_factor * (2.0**attempt)
-        return min(delay, self._retry_policy.max_delay)
+        delay = min(delay, self._retry_policy.max_delay)
+        if delay == 0 or self._retry_policy.jitter_ratio == 0:
+            return delay
+        jitter = _JITTER.uniform(0, delay * self._retry_policy.jitter_ratio)
+        return min(delay + jitter, self._retry_policy.max_delay)
+
+    def _wait_for_request_slot(self) -> None:
+        if self._min_request_interval == 0:
+            return
+        with self._request_lock:
+            started_at = time.monotonic()
+            if self._last_request_started_at is not None:
+                elapsed = started_at - self._last_request_started_at
+                delay = self._min_request_interval - elapsed
+                if delay > 0:
+                    time.sleep(delay)
+                    started_at = time.monotonic()
+            self._last_request_started_at = started_at
 
     def _retry_after(self, response: httpx.Response) -> float | None:
         value = response.headers.get("Retry-After")

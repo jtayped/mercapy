@@ -1,4 +1,4 @@
-"""Mercapy's public API."""
+"""mercapy's public api."""
 
 from ._version import __version__
 from .client import Mercadona, RetryPolicy

@@ -1,4 +1,4 @@
-"""Immutable values returned by :class:`mercapy.Mercadona`."""
+"""immutable values returned by :class:`mercapy.Mercadona`."""
 
 from __future__ import annotations
 
@@ -16,14 +16,14 @@ JsonObject: TypeAlias = dict[str, object]
 
 
 class Language(StrEnum):
-    """Languages supported by Mercadona's storefront."""
+    """languages supported by mercadona's storefront."""
 
     SPANISH = "es"
     ENGLISH = "en"
 
 
 class PhotoFit(StrEnum):
-    """Imgix resize modes supported by :meth:`Photo.url`."""
+    """imgix resize modes supported by :meth:`Photo.url`."""
 
     CROP = "crop"
     FIT = "fit"
@@ -31,6 +31,8 @@ class PhotoFit(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class Price:
+    """parsed price, size, tax, and sale values for a product."""
+
     unit: Decimal | None = None
     bulk: Decimal | None = None
     previous: Decimal | None = None
@@ -53,6 +55,8 @@ class Price:
 
 @dataclass(frozen=True, slots=True)
 class Availability:
+    """publication status and purchase limits for a product."""
+
     published: bool | None = None
     status: str | None = None
     limit: Decimal | None = None
@@ -62,7 +66,7 @@ class Availability:
 
 @dataclass(frozen=True, slots=True)
 class Photo:
-    """A product image identified independently of its requested size."""
+    """a product image identified independently of its requested size."""
 
     file_name: str
     perspective: int | None = None
@@ -81,7 +85,7 @@ class Photo:
         height: int | None = None,
         fit: PhotoFit | str = PhotoFit.CROP,
     ) -> str:
-        """Build an image URL without performing I/O."""
+        """build an image url without performing i/o."""
 
         try:
             fit_value = PhotoFit(fit).value
@@ -105,6 +109,8 @@ class Photo:
 
 @dataclass(frozen=True, slots=True)
 class ProductDetails:
+    """descriptive, legal, origin, supplier, and handling details."""
+
     legal_name: str | None = None
     description: str | None = None
     origin: str | None = None
@@ -121,12 +127,16 @@ class ProductDetails:
 
 @dataclass(frozen=True, slots=True)
 class Nutrition:
+    """ingredient and allergen text supplied for a product."""
+
     allergens: str | None = None
     ingredients: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class Category:
+    """one category node with optional children and product summaries."""
+
     id: str
     name: str
     order: int | None = None
@@ -142,6 +152,8 @@ class Category:
 
 @dataclass(frozen=True, slots=True)
 class ProductSummary:
+    """partial product data returned by listing operations."""
+
     id: str
     name: str
     slug: str | None = None
@@ -160,6 +172,8 @@ class ProductSummary:
 
 @dataclass(frozen=True, slots=True)
 class Product:
+    """complete product data returned by the product endpoint."""
+
     id: str
     name: str
     ean: str | None = None
@@ -183,7 +197,7 @@ class Product:
 
 @dataclass(frozen=True, slots=True)
 class SeasonSummary:
-    """A seasonal collection advertised by a home-page banner."""
+    """a seasonal collection advertised by a home-page banner."""
 
     id: str
     title: str
@@ -197,6 +211,8 @@ class SeasonSummary:
 
 @dataclass(frozen=True, slots=True)
 class HomeNotification:
+    """one notification displayed in a home section."""
+
     title: str
     kind: str | None = None
     action: str | None = None
@@ -208,6 +224,8 @@ HomeItem: TypeAlias = ProductSummary | SeasonSummary | HomeNotification
 
 @dataclass(frozen=True, slots=True)
 class HomeSection:
+    """one ordered section from the storefront home response."""
+
     layout: str
     title: str | None = None
     subtitle: str | None = None
@@ -220,6 +238,8 @@ class HomeSection:
 
 @dataclass(frozen=True, slots=True)
 class Season:
+    """one seasonal collection and its product summaries."""
+
     id: str
     title: str
     layout: str | None = None
@@ -230,6 +250,8 @@ class Season:
 
 @dataclass(frozen=True, slots=True)
 class SearchResult:
+    """one page of search results with pagination metadata."""
+
     query: str
     page: int
     page_size: int

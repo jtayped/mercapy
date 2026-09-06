@@ -1,35 +1,43 @@
-# Release checklist
+# release process
 
-## One-time setup before 2.0.0
+the repository publishes through pypi trusted publishing. the release workflow
+builds the distributions once, stores them as a github artifact, then publishes
+that artifact after approval of the protected `pypi` environment.
 
-- In the PyPI `mercapy` project's publishing settings, add a trusted publisher
-  for owner `jtayped`, repository `mercapy`, workflow `python-publish.yml`, and
-  environment `pypi`.
-- In GitHub, create the `pypi` environment and add the required manual reviewers.
-- Remove the old `PYPI_API_TOKEN` repository or environment secret.
+## repository setup
 
-Use the [PyPA trusted-publishing workflow guide](https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/)
-when configuring PyPI and GitHub.
+the pypi `mercapy` project must define a trusted publisher with these values:
 
-The publish job receives `id-token: write`; every other job and workflow receives
-only `contents: read`. The publish job runs on GitHub-hosted Ubuntu, downloads the
-already-built distributions, and invokes the PyPA publisher with its default
-attestations.
+| setting | value |
+| --- | --- |
+| owner | `jtayped` |
+| repository | `mercapy` |
+| workflow | `python-publish.yml` |
+| environment | `pypi` |
 
-## Every release
+github must have a protected `pypi` environment with a required reviewer. the
+repository and environment must not contain a `PYPI_API_TOKEN` secret.
 
-- Update `src/mercapy/_version.py` and `CHANGELOG.md`.
-- Run Ruff formatting and linting, strict mypy, pytest with branch coverage,
+the publish job alone receives `id-token: write`. all other workflow jobs receive
+`contents: read`. see the [pypa trusted publishing guide](https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/)
+for the identity exchange used by the publish job.
+
+## release checklist
+
+- update `src/mercapy/_version.py`.
+- move the pending changelog entries under a version and release date.
+- run ruff formatting and linting, strict mypy, pytest with branch coverage, a
   package build, and `twine check`.
-- Build the wheel and install it into a clean virtual environment. Run the README
-  migration examples against that installed wheel outside the repository.
-- Manually run the `Live smoke` workflow and confirm postcode resolution, search,
-  product detail, and categories succeed.
-- Create and publish a GitHub release whose tag is exactly `v` followed by the
-  package version, for example `v2.0.0`.
-- Approve the protected `pypi` environment after the release workflow's quality
-  and build jobs pass.
-- Confirm the PyPI files, metadata, provenance, and default attestations.
+- install the wheel into a clean virtual environment outside the repository and
+  import `mercapy` there.
+- run the readme and migration examples against that installed wheel.
+- start the `live smoke` workflow manually. confirm postcode resolution, search,
+  product detail, and categories all succeed.
+- create a github release. its tag must equal `v` followed by the package version,
+  such as `v2.0.1`.
+- wait for the release workflow's quality and build jobs.
+- review and approve the protected `pypi` deployment.
+- confirm the release files, metadata, provenance, and attestations on pypi.
 
-The release workflow builds once. It rejects a release tag that does not match
-the package version.
+the release workflow rejects a tag that does not match the package version. it
+does not rebuild in the privileged publish job.
