@@ -8,10 +8,15 @@ this project follows [semantic versioning](https://semver.org/).
 
 - a documentation index and separate usage, api, and reliability references,
   with checks for lowercase prose, local links, and python snippet syntax.
+- ci coverage for the minimum supported python and httpx versions.
+- a clean-wheel request test and dependency consistency check.
 
 ### changed
 
 - rewrote project documentation in lowercase, direct prose.
+- made the wheel import check compare package metadata instead of a hard-coded
+  version.
+- configured dependabot to preserve compatible runtime dependency ranges.
 
 ## [2.0.0] - 2026-09-06
 

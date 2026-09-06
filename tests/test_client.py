@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import FrozenInstanceError
 from decimal import Decimal
 from typing import Any
@@ -105,7 +106,7 @@ def test_from_postal_code_resolves_warehouse_and_sends_exact_request() -> None:
     )
     assert request.headers["content-type"] == "application/json"
     assert request.headers["accept-language"] == "es"
-    assert request.read() == b'{"new_postal_code":"28001"}'
+    assert json.loads(request.read()) == {"new_postal_code": "28001"}
 
 
 def test_from_postal_code_closes_client_when_header_is_missing() -> None:
@@ -134,9 +135,9 @@ def test_search_encodes_query_and_parses_pagination(load_fixture: Any) -> None:
     )
     assert request.headers["x-algolia-application-id"] == "7UZJKL1DJ0"
     assert request.headers["x-algolia-api-key"]
-    assert request.read() == (
-        b'{"params":"query=caf%C3%A9+con+leche+%26+miel&page=2&hitsPerPage=2"}'
-    )
+    assert json.loads(request.read()) == {
+        "params": "query=caf%C3%A9+con+leche+%26+miel&page=2&hitsPerPage=2"
+    }
     assert result.query == "café con leche & miel"
     assert result.page == 2
     assert result.page_size == 2
