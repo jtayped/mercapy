@@ -21,11 +21,17 @@ construction itself performs no i/o.
 ```python
 from mercapy import Mercadona
 
-with Mercadona("mad3", language="es", timeout=8.0) as mercadona:
+with Mercadona(
+    "mad3",
+    language="es",
+    timeout=8.0,
+    min_request_interval=0.25,
+) as mercadona:
     print(mercadona.language)
 ```
 
-supported language values are `"es"` and `"en"`.
+supported language values are `"es"` and `"en"`. this example also keeps at
+least 0.25 seconds between request starts made by the client.
 
 ## search products
 

@@ -64,6 +64,7 @@ the client reuses its connections. use a `with` block to close it after use.
 - request failures raise a `MercapyError` subclass. library code does not print.
 - connection failures, http `429`, and selected `5xx` responses use a bounded
   retry policy.
+- optional request pacing limits how quickly one client starts requests.
 
 ## documentation
 

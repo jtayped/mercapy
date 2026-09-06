@@ -11,6 +11,7 @@ this project follows [semantic versioning](https://semver.org/).
 - ci coverage for the minimum supported python and httpx versions.
 - a clean-wheel request test and dependency consistency check.
 - security linting for library and maintenance code.
+- opt-in per-client request pacing and jittered retry delays.
 
 ### changed
 

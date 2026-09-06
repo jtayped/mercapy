@@ -19,7 +19,13 @@ from mercapy import (
 
 
 def client_for(
-    handler: Any, *, attempts: int = 3, backoff: float = 0.25, max_delay: float = 5
+    handler: Any,
+    *,
+    attempts: int = 3,
+    backoff: float = 0.25,
+    max_delay: float = 5,
+    jitter: float = 0,
+    interval: float = 0,
 ) -> Mercadona:
     return Mercadona(
         "mad3",
@@ -27,7 +33,9 @@ def client_for(
             max_attempts=attempts,
             backoff_factor=backoff,
             max_delay=max_delay,
+            jitter_ratio=jitter,
         ),
+        min_request_interval=interval,
         transport=httpx.MockTransport(handler),
     )
 
@@ -208,6 +216,59 @@ def test_transient_5xx_retries_then_succeeds(
     with client_for(handler) as client:
         client.get_categories()
     assert delays == [0.25, 0.5]
+
+
+def test_backoff_adds_bounded_jitter(monkeypatch: pytest.MonkeyPatch) -> None:
+    statuses = iter((503, 200))
+    delays: list[float] = []
+
+    class MaximumJitter:
+        @staticmethod
+        def uniform(lower: float, upper: float) -> float:
+            assert lower == 0
+            return upper
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        status = next(statuses)
+        return httpx.Response(
+            status,
+            request=request,
+            json={"results": []} if status == 200 else None,
+        )
+
+    monkeypatch.setattr("mercapy.client._JITTER", MaximumJitter())
+    monkeypatch.setattr("mercapy.client.time.sleep", delays.append)
+    with client_for(handler, jitter=0.2) as client:
+        client.get_categories()
+
+    assert delays == pytest.approx([0.3])
+
+
+def test_request_pacing_also_applies_to_retries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    statuses = iter((503, 200))
+    clock = [10.0]
+    delays: list[float] = []
+
+    def sleep(delay: float) -> None:
+        delays.append(delay)
+        clock[0] += delay
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        status = next(statuses)
+        return httpx.Response(
+            status,
+            request=request,
+            json={"results": []} if status == 200 else None,
+        )
+
+    monkeypatch.setattr("mercapy.client.time.monotonic", lambda: clock[0])
+    monkeypatch.setattr("mercapy.client.time.sleep", sleep)
+    with client_for(handler, interval=0.5) as client:
+        client.get_categories()
+
+    assert delays == pytest.approx([0.25, 0.25])
 
 
 @pytest.mark.parametrize("status", [500, 501])

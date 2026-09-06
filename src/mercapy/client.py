@@ -13,6 +13,8 @@ from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from math import isfinite
 from pathlib import Path
+from random import SystemRandom
+from threading import Lock
 from types import TracebackType
 from typing import Any, Self
 from urllib.parse import quote, urlencode
@@ -50,6 +52,7 @@ from .models import (
 _WAREHOUSE_PATTERN = re.compile(r"^[a-z0-9]{2,16}$")
 _POSTAL_CODE_PATTERN = re.compile(r"^(?:0[1-9]|[1-4][0-9]|5[0-2])\d{3}$")
 _RETRYABLE_STATUS_CODES = frozenset({500, 502, 503, 504})
+_JITTER = SystemRandom()
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,14 +62,38 @@ class RetryPolicy:
     max_attempts: int = 3
     backoff_factor: float = 0.25
     max_delay: float = 5.0
+    jitter_ratio: float = 0.1
 
     def __post_init__(self) -> None:
+        if isinstance(self.max_attempts, bool) or not isinstance(
+            self.max_attempts, int
+        ):
+            raise ConfigurationError("max_attempts must be an integer")
         if self.max_attempts < 1:
             raise ConfigurationError("max_attempts must be at least one")
-        if self.backoff_factor < 0:
-            raise ConfigurationError("backoff_factor cannot be negative")
-        if self.max_delay < 0:
-            raise ConfigurationError("max_delay cannot be negative")
+        if (
+            isinstance(self.backoff_factor, bool)
+            or not isinstance(self.backoff_factor, (int, float))
+            or not isfinite(self.backoff_factor)
+            or self.backoff_factor < 0
+        ):
+            raise ConfigurationError(
+                "backoff_factor must be a finite non-negative number"
+            )
+        if (
+            isinstance(self.max_delay, bool)
+            or not isinstance(self.max_delay, (int, float))
+            or not isfinite(self.max_delay)
+            or self.max_delay < 0
+        ):
+            raise ConfigurationError("max_delay must be a finite non-negative number")
+        if (
+            isinstance(self.jitter_ratio, bool)
+            or not isinstance(self.jitter_ratio, (int, float))
+            or not isfinite(self.jitter_ratio)
+            or not 0 <= self.jitter_ratio <= 1
+        ):
+            raise ConfigurationError("jitter_ratio must be between zero and one")
 
 
 def validate_postal_code(postal_code: str) -> str:
@@ -123,6 +150,24 @@ def _validate_timeout(timeout: float | httpx.Timeout) -> float | httpx.Timeout:
     return value
 
 
+def _validate_request_interval(value: float) -> float:
+    if isinstance(value, bool):
+        raise ConfigurationError(
+            "min_request_interval must be a finite non-negative number"
+        )
+    try:
+        interval = float(value)
+    except (TypeError, ValueError) as error:
+        raise ConfigurationError(
+            "min_request_interval must be a finite non-negative number"
+        ) from error
+    if not isfinite(interval) or interval < 0:
+        raise ConfigurationError(
+            "min_request_interval must be a finite non-negative number"
+        )
+    return interval
+
+
 class Mercadona:
     """A reusable synchronous client scoped to one Mercadona warehouse."""
 
@@ -133,6 +178,7 @@ class Mercadona:
         language: Language | str = Language.SPANISH,
         timeout: float | httpx.Timeout = 10.0,
         retry_policy: RetryPolicy | None = None,
+        min_request_interval: float = 0.0,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         self._warehouse = _validate_warehouse(warehouse)
@@ -141,6 +187,9 @@ class Mercadona:
         except ValueError as error:
             raise ConfigurationError("language must be 'es' or 'en'") from error
         self._retry_policy = retry_policy or RetryPolicy()
+        self._min_request_interval = _validate_request_interval(min_request_interval)
+        self._request_lock = Lock()
+        self._last_request_started_at: float | None = None
         timeout_config = _validate_timeout(timeout)
         try:
             self._client = httpx.Client(
@@ -165,6 +214,7 @@ class Mercadona:
         language: Language | str = Language.SPANISH,
         timeout: float | httpx.Timeout = 10.0,
         retry_policy: RetryPolicy | None = None,
+        min_request_interval: float = 0.0,
         transport: httpx.BaseTransport | None = None,
     ) -> Self:
         """Resolve a postal code with one request and return a scoped client."""
@@ -175,6 +225,7 @@ class Mercadona:
             language=language,
             timeout=timeout,
             retry_policy=retry_policy,
+            min_request_interval=min_request_interval,
             transport=transport,
         )
         try:
@@ -205,6 +256,10 @@ class Mercadona:
     @property
     def is_closed(self) -> bool:
         return self._closed
+
+    @property
+    def min_request_interval(self) -> float:
+        return self._min_request_interval
 
     def close(self) -> None:
         if not self._closed:
@@ -399,6 +454,7 @@ class Mercadona:
     ) -> httpx.Response:
         self._ensure_open()
         for attempt in range(self._retry_policy.max_attempts):
+            self._wait_for_request_slot()
             try:
                 response = send()
             except (httpx.ConnectError, httpx.ConnectTimeout) as error:
@@ -456,7 +512,24 @@ class Mercadona:
 
     def _backoff(self, attempt: int) -> float:
         delay = self._retry_policy.backoff_factor * (2.0**attempt)
-        return min(delay, self._retry_policy.max_delay)
+        delay = min(delay, self._retry_policy.max_delay)
+        if delay == 0 or self._retry_policy.jitter_ratio == 0:
+            return delay
+        jitter = _JITTER.uniform(0, delay * self._retry_policy.jitter_ratio)
+        return min(delay + jitter, self._retry_policy.max_delay)
+
+    def _wait_for_request_slot(self) -> None:
+        if self._min_request_interval == 0:
+            return
+        with self._request_lock:
+            started_at = time.monotonic()
+            if self._last_request_started_at is not None:
+                elapsed = started_at - self._last_request_started_at
+                delay = self._min_request_interval - elapsed
+                if delay > 0:
+                    time.sleep(delay)
+                    started_at = time.monotonic()
+            self._last_request_started_at = started_at
 
     def _retry_after(self, response: httpx.Response) -> float | None:
         value = response.headers.get("Retry-After")

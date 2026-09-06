@@ -14,6 +14,7 @@ Mercadona(
     language="es",
     timeout=10.0,
     retry_policy=None,
+    min_request_interval=0.0,
     transport=None,
 )
 ```
@@ -24,7 +25,9 @@ no request.
 
 `language` accepts `Language.SPANISH`, `Language.ENGLISH`, `"es"`, or `"en"`.
 `timeout` accepts a positive finite number or `httpx.Timeout`. `transport` accepts
-an `httpx.BaseTransport` and is mainly useful for tests.
+an `httpx.BaseTransport` and is mainly useful for tests. a positive
+`min_request_interval` sets the minimum time between request starts for that
+client.
 
 the client supports `with`, `close()`, and these read-only properties:
 
@@ -32,6 +35,7 @@ the client supports `with`, `close()`, and these read-only properties:
 | --- | --- | --- |
 | `warehouse` | `str` | normalized warehouse code |
 | `language` | `Language` | selected response language |
+| `min_request_interval` | `float` | minimum seconds between request starts |
 | `is_closed` | `bool` | whether `close()` has run |
 
 ### `Mercadona.from_postal_code()`
@@ -43,6 +47,7 @@ Mercadona.from_postal_code(
     language="es",
     timeout=10.0,
     retry_policy=None,
+    min_request_interval=0.0,
     transport=None,
 )
 ```
@@ -103,12 +108,13 @@ RetryPolicy(
     max_attempts=3,
     backoff_factor=0.25,
     max_delay=5.0,
+    jitter_ratio=0.1,
 )
 ```
 
-`max_attempts` includes the first request and must be at least 1. both delay
-values must be non-negative. see [reliability and request
-behavior](reliability.md) for the retry rules.
+`max_attempts` includes the first request and must be at least 1. delay values
+must be non-negative. `jitter_ratio` must be between 0 and 1. see [reliability
+and request behavior](reliability.md) for the retry rules.
 
 ## result models
 

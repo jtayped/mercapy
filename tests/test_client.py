@@ -37,6 +37,7 @@ def test_constructor_performs_no_io_and_context_manager_closes() -> None:
     )
     assert client.warehouse == "mad3"
     assert client.language is Language.ENGLISH
+    assert client.min_request_interval == 0
     assert not client.is_closed
     assert requests == []
 
@@ -71,15 +72,29 @@ def test_invalid_structured_timeout_is_rejected() -> None:
         Mercadona("mad3", timeout=httpx.Timeout(connect=-1, read=1, write=1, pool=1))
 
 
+@pytest.mark.parametrize("interval", ["later", -1, float("nan"), float("inf"), True])
+def test_invalid_request_interval_is_rejected(interval: Any) -> None:
+    with pytest.raises(ConfigurationError, match="min_request_interval"):
+        Mercadona("mad3", min_request_interval=interval)
+
+
 @pytest.mark.parametrize(
     ("kwargs", "message"),
     [
         ({"max_attempts": 0}, "max_attempts"),
+        ({"max_attempts": True}, "max_attempts"),
+        ({"max_attempts": 1.5}, "max_attempts"),
         ({"backoff_factor": -1}, "backoff_factor"),
+        ({"backoff_factor": float("nan")}, "backoff_factor"),
+        ({"backoff_factor": True}, "backoff_factor"),
         ({"max_delay": -1}, "max_delay"),
+        ({"max_delay": float("inf")}, "max_delay"),
+        ({"jitter_ratio": -0.1}, "jitter_ratio"),
+        ({"jitter_ratio": 1.1}, "jitter_ratio"),
+        ({"jitter_ratio": float("nan")}, "jitter_ratio"),
     ],
 )
-def test_invalid_retry_policy_is_rejected(kwargs: dict[str, int], message: str) -> None:
+def test_invalid_retry_policy_is_rejected(kwargs: dict[str, Any], message: str) -> None:
     with pytest.raises(ConfigurationError, match=message):
         RetryPolicy(**kwargs)
 
@@ -94,9 +109,12 @@ def test_from_postal_code_resolves_warehouse_and_sends_exact_request() -> None:
         )
 
     with Mercadona.from_postal_code(
-        "28001", transport=httpx.MockTransport(handler)
+        "28001",
+        min_request_interval=0.25,
+        transport=httpx.MockTransport(handler),
     ) as client:
         assert client.warehouse == "mad3"
+        assert client.min_request_interval == 0.25
 
     assert len(requests) == 1
     request = requests[0]
@@ -107,6 +125,37 @@ def test_from_postal_code_resolves_warehouse_and_sends_exact_request() -> None:
     assert request.headers["content-type"] == "application/json"
     assert request.headers["accept-language"] == "es"
     assert json.loads(request.read()) == {"new_postal_code": "28001"}
+
+
+def test_min_request_interval_spaces_request_starts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock = [10.0]
+    delays: list[float] = []
+    requests = 0
+
+    def sleep(delay: float) -> None:
+        delays.append(delay)
+        clock[0] += delay
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal requests
+        requests += 1
+        return json_response(request, {"results": []})
+
+    monkeypatch.setattr("mercapy.client.time.monotonic", lambda: clock[0])
+    monkeypatch.setattr("mercapy.client.time.sleep", sleep)
+    with Mercadona(
+        "mad3",
+        min_request_interval=0.5,
+        transport=httpx.MockTransport(handler),
+    ) as client:
+        client.get_categories()
+        clock[0] += 0.2
+        client.get_categories()
+
+    assert requests == 2
+    assert delays == pytest.approx([0.3])
 
 
 def test_from_postal_code_closes_client_when_header_is_missing() -> None:

@@ -25,8 +25,19 @@ errors, including read timeouts, raise `TransportError` after the first failure.
 
 ## rate limits and retries
 
-the client has no request-per-second throttle. it reacts when a request fails or
-the server returns a retryable response.
+the client does not delay normal requests by default. set `min_request_interval`
+to place a minimum gap between request starts made by one client. the same limit
+applies to retries.
+
+```python
+from mercapy import Mercadona
+
+with Mercadona("mad3", min_request_interval=0.25) as mercadona:
+    categories = mercadona.get_categories()
+```
+
+the interval limits start times, not concurrency or total request duration. a
+value of 0.25 keeps successive request starts at least 0.25 seconds apart.
 
 the default `RetryPolicy` allows three attempts. retries apply to:
 
@@ -36,9 +47,11 @@ the default `RetryPolicy` allows three attempts. retries apply to:
 
 ordinary `4xx` responses and other `5xx` responses are not retried.
 
-without a `Retry-After` header, the delay before retry number `n` is
+without a `Retry-After` header, the base delay before retry number `n` is
 `backoff_factor * 2 ** n`, starting with `n = 0`. `max_delay` caps every delay.
-the default delays are 0.25 and 0.5 seconds before the second and third attempts.
+`jitter_ratio` adds a random value between zero and that fraction of the base
+delay. the cap still applies. default retry delays are therefore 0.25 through
+0.275 seconds and 0.5 through 0.55 seconds before the second and third attempts.
 
 for http `429`, the client accepts `Retry-After` as seconds or an http date. the
 same `max_delay` cap applies. an invalid header falls back to exponential backoff.
@@ -47,7 +60,12 @@ if the retry budget ends on a `429`, the client raises `RateLimitError`.
 ```python
 from mercapy import Mercadona, RateLimitError, RetryPolicy
 
-retry = RetryPolicy(max_attempts=2, backoff_factor=0.2, max_delay=2.0)
+retry = RetryPolicy(
+    max_attempts=2,
+    backoff_factor=0.2,
+    max_delay=2.0,
+    jitter_ratio=0.1,
+)
 
 try:
     with Mercadona("mad3", timeout=5.0, retry_policy=retry) as mercadona:
@@ -132,6 +150,7 @@ existing destination remains intact unless the full download succeeds.
 
 retries increase these counts after eligible failures. avoid calling
 `get_product()` for every catalog item unless complete product data is required.
+`min_request_interval` changes timing but not request counts.
 
 ## verification
 
