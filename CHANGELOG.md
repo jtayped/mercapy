@@ -10,6 +10,7 @@ this project follows [semantic versioning](https://semver.org/).
   with checks for lowercase prose, local links, and python snippet syntax.
 - ci coverage for the minimum supported python and httpx versions.
 - a clean-wheel request test and dependency consistency check.
+- security linting for library and maintenance code.
 
 ### changed
 

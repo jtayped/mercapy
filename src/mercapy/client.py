@@ -398,14 +398,16 @@ class Mercadona:
         url: str,
     ) -> httpx.Response:
         self._ensure_open()
-        last_connection_error: httpx.RequestError | None = None
         for attempt in range(self._retry_policy.max_attempts):
             try:
                 response = send()
             except (httpx.ConnectError, httpx.ConnectTimeout) as error:
-                last_connection_error = error
                 if attempt + 1 == self._retry_policy.max_attempts:
-                    break
+                    raise TransportError(
+                        f"{method} {url} failed after "
+                        f"{self._retry_policy.max_attempts} connection attempts: "
+                        f"{error}"
+                    ) from error
                 time.sleep(self._backoff(attempt))
                 continue
             except httpx.RequestError as error:
@@ -437,11 +439,7 @@ class Mercadona:
             self._raise_for_status(response, method=method, url=url)
             return response
 
-        assert last_connection_error is not None
-        raise TransportError(
-            f"{method} {url} failed after {self._retry_policy.max_attempts} "
-            f"connection attempts: {last_connection_error}"
-        ) from last_connection_error
+        raise RuntimeError("retry loop ended without a response")  # pragma: no cover
 
     def _raise_for_status(
         self, response: httpx.Response, *, method: str, url: str
