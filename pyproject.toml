@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.27"]
+requires = ["hatchling>=1.32.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -28,12 +28,12 @@ dependencies = ["httpx>=0.27,<1"]
 
 [project.optional-dependencies]
 dev = [
-  "build>=1.2.2",
-  "mypy>=1.15",
-  "pytest>=8.3",
-  "pytest-cov>=6",
-  "ruff>=0.11",
-  "twine>=6.1",
+  "build>=1.6.0",
+  "mypy>=2.3.1",
+  "pytest>=9.1.1",
+  "pytest-cov>=7.1.0",
+  "ruff>=0.16.5",
+  "twine>=7.0.0",
 ]
 
 [project.urls]
