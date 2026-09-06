@@ -15,6 +15,7 @@ INLINE_CODE = re.compile(r"`[^`]*`")
 LINK_DESTINATION = re.compile(r"\]\([^)]*\)")
 MARKDOWN_LINK = re.compile(r"(?<!!)\[[^]]+\]\(([^)]+)\)")
 HTML_TAG = re.compile(r"<[^>]*>")
+MKDOCSTRINGS_DIRECTIVE = re.compile(r"^:::\s+\S+$", re.MULTILINE)
 
 
 def relative_name(path: Path) -> str:
@@ -28,6 +29,7 @@ def test_documentation_prose_is_lowercase(path: Path) -> None:
     prose = INLINE_CODE.sub("", prose)
     prose = LINK_DESTINATION.sub("]", prose)
     prose = HTML_TAG.sub("", prose)
+    prose = MKDOCSTRINGS_DIRECTIVE.sub("", prose)
     violations = [
         f"{relative_name(path)}:{line_number}: {line}"
         for line_number, line in enumerate(prose.splitlines(), start=1)

@@ -9,7 +9,7 @@ use cpython 3.11 through 3.14:
 
 ```bash
 python -m venv .venv
-.venv/bin/python -m pip install -e '.[dev]'
+.venv/bin/python -m pip install -e '.[dev,docs]'
 ```
 
 run the same checks as ci:
@@ -19,6 +19,7 @@ run the same checks as ci:
 .venv/bin/ruff check .
 .venv/bin/mypy
 .venv/bin/pytest
+.venv/bin/mkdocs build --strict
 .venv/bin/python -m build
 .venv/bin/twine check dist/*
 ```

@@ -71,6 +71,7 @@ the client reuses its connections. use a `with` block to close it after use.
 - [documentation index](docs/index.md)
 - [usage guide](docs/usage.md)
 - [api reference](docs/api.md)
+- [generated api reference](docs/reference.md)
 - [reliability and request behavior](docs/reliability.md)
 - [v1 to v2 migration guide](MIGRATION.md)
 - [contribution guide](CONTRIBUTING.md)

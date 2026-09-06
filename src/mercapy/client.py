@@ -1,4 +1,4 @@
-"""Synchronous Mercadona client."""
+"""synchronous mercadona client."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ _JITTER = SystemRandom()
 
 @dataclass(frozen=True, slots=True)
 class RetryPolicy:
-    """Bounded retry settings for connection and transient HTTP failures."""
+    """bounded retry settings for connection and transient http failures."""
 
     max_attempts: int = 3
     backoff_factor: float = 0.25
@@ -97,7 +97,7 @@ class RetryPolicy:
 
 
 def validate_postal_code(postal_code: str) -> str:
-    """Validate and return a five-digit Spanish postal code."""
+    """validate and return a five-digit spanish postal code."""
 
     if not isinstance(postal_code, str) or not _POSTAL_CODE_PATTERN.fullmatch(
         postal_code
@@ -169,7 +169,7 @@ def _validate_request_interval(value: float) -> float:
 
 
 class Mercadona:
-    """A reusable synchronous client scoped to one Mercadona warehouse."""
+    """a reusable synchronous client scoped to one mercadona warehouse."""
 
     def __init__(
         self,
@@ -217,7 +217,7 @@ class Mercadona:
         min_request_interval: float = 0.0,
         transport: httpx.BaseTransport | None = None,
     ) -> Self:
-        """Resolve a postal code with one request and return a scoped client."""
+        """resolve a postal code with one request and return a scoped client."""
 
         postal_code = validate_postal_code(postal_code)
         client = cls(
@@ -247,21 +247,31 @@ class Mercadona:
 
     @property
     def warehouse(self) -> str:
+        """return the normalized warehouse code."""
+
         return self._warehouse
 
     @property
     def language(self) -> Language:
+        """return the selected storefront language."""
+
         return self._language
 
     @property
     def is_closed(self) -> bool:
+        """return whether the client has been closed."""
+
         return self._closed
 
     @property
     def min_request_interval(self) -> float:
+        """return the minimum time between request starts in seconds."""
+
         return self._min_request_interval
 
     def close(self) -> None:
+        """close the http connection pool."""
+
         if not self._closed:
             self._client.close()
             self._closed = True
@@ -281,6 +291,8 @@ class Mercadona:
     def search_products(
         self, query: str, *, page: int = 0, page_size: int = 20
     ) -> SearchResult:
+        """search one zero-based page of product summaries."""
+
         if not isinstance(query, str):
             raise ConfigurationError("query must be a string")
         if isinstance(page, bool) or not isinstance(page, int) or page < 0:
@@ -311,11 +323,15 @@ class Mercadona:
         )
 
     def get_product(self, product_id: str | int) -> Product:
+        """return a complete product record by id."""
+
         product_id = _validate_identifier(product_id, "product_id")
         data = self._get_api_json(f"/api/products/{quote(product_id, safe='')}/")
         return parse_product(data)
 
     def get_categories(self) -> tuple[Category, ...]:
+        """return the storefront category tree."""
+
         data = self._get_api_json("/api/categories/")
         results = data.get("results")
         if not isinstance(results, list):
@@ -323,11 +339,15 @@ class Mercadona:
         return tuple(parse_category(item) for item in results)
 
     def get_category(self, category_id: str | int) -> Category:
+        """return one category by id."""
+
         category_id = _validate_identifier(category_id, "category_id")
         data = self._get_api_json(f"/api/categories/{quote(category_id, safe='')}/")
         return parse_category(data)
 
     def get_catalog(self) -> tuple[ProductSummary, ...]:
+        """collect deduplicated summaries from all listed category groups."""
+
         products: list[ProductSummary] = []
         seen: set[str] = set()
 
@@ -346,6 +366,8 @@ class Mercadona:
         return tuple(products)
 
     def get_new_arrivals(self) -> tuple[ProductSummary, ...]:
+        """return the current new-arrival product summaries."""
+
         data = self._get_api_json("/api/home/new-arrivals/")
         items = data.get("items")
         if not isinstance(items, list):
@@ -353,6 +375,8 @@ class Mercadona:
         return tuple(parse_product_summary(item) for item in items)
 
     def get_home(self) -> tuple[HomeSection, ...]:
+        """return ordered storefront home sections."""
+
         data = self._get_api_json("/api/home/")
         sections = data.get("sections")
         if not isinstance(sections, list):
@@ -360,6 +384,8 @@ class Mercadona:
         return tuple(parse_home_section(section) for section in sections)
 
     def get_season(self, season_id: str) -> Season:
+        """return one seasonal product collection by id."""
+
         season_id = _validate_identifier(season_id, "season_id")
         data = self._get_api_json(f"/api/home/sections/{quote(season_id, safe='')}/")
         return parse_season(data, season_id)
@@ -373,6 +399,8 @@ class Mercadona:
         height: int | None = None,
         fit: PhotoFit | str = PhotoFit.CROP,
     ) -> Path:
+        """download a photo through an atomic destination replacement."""
+
         if not isinstance(photo, Photo):
             raise ConfigurationError("photo must be a Photo instance")
         url = photo.url(width=width, height=height, fit=fit)

@@ -1,1 +1,1 @@
-"""Maintenance scripts for Mercapy."""
+"""maintenance scripts for mercapy."""

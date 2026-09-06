@@ -1,4 +1,4 @@
-"""Resolve explicit Spanish postal codes to Mercadona warehouses."""
+"""resolve explicit spanish postal codes to mercadona warehouses."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ POSTAL_CODE_URL = "https://tienda.mercadona.es/api/postal-codes/actions/change-p
 
 
 def lookup_warehouse(postal_code: str, *, timeout: float = 5.0) -> str:
-    """Resolve one validated postcode."""
+    """resolve one validated postcode."""
 
     postal_code = validate_postal_code(postal_code)
     try:
@@ -44,7 +44,7 @@ def discover_warehouses(
     max_workers: int = 5,
     lookup: Callable[[str], str] = lookup_warehouse,
 ) -> dict[str, str]:
-    """Resolve postcodes concurrently while retaining each future's input."""
+    """resolve postcodes concurrently while retaining each future's input."""
 
     if not 1 <= max_workers <= 32:
         raise ValueError("max_workers must be between 1 and 32")

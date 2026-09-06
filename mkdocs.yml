@@ -1,0 +1,45 @@
+site_name: mercapy
+site_description: a synchronous, typed client for mercadona's public storefront apis
+site_url: https://jtayped.github.io/mercapy/
+repo_url: https://github.com/jtayped/mercapy
+repo_name: jtayped/mercapy
+edit_uri: edit/main/docs/
+copyright: copyright © 2026 joel taylor
+strict: true
+
+theme:
+  name: readthedocs
+  locale: en
+
+nav:
+  - home: index.md
+  - usage: usage.md
+  - api guide: api.md
+  - generated api: reference.md
+  - reliability: reliability.md
+  - migration: https://github.com/jtayped/mercapy/blob/main/MIGRATION.md
+  - contributing: https://github.com/jtayped/mercapy/blob/main/CONTRIBUTING.md
+  - releases: https://github.com/jtayped/mercapy/blob/main/RELEASING.md
+  - changelog: https://github.com/jtayped/mercapy/blob/main/CHANGELOG.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            inherited_members: false
+            members_order: source
+            merge_init_into_class: true
+            separate_signature: true
+            show_root_heading: true
+            show_signature_annotations: true
+            show_source: false
+            signature_crossrefs: true
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true

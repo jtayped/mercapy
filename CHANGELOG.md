@@ -12,6 +12,7 @@ this project follows [semantic versioning](https://semver.org/).
 - a clean-wheel request test and dependency consistency check.
 - security linting for library and maintenance code.
 - opt-in per-client request pacing and jittered retry delays.
+- a generated api reference and a github pages documentation workflow.
 
 ### changed
 
@@ -19,6 +20,7 @@ this project follows [semantic versioning](https://semver.org/).
 - made the wheel import check compare package metadata instead of a hard-coded
   version.
 - configured dependabot to preserve compatible runtime dependency ranges.
+- added lowercase package metadata and documentation links.
 
 ## [2.0.0] - 2026-09-06
 

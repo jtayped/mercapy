@@ -10,11 +10,12 @@ orders, or payment data.
 | --- | --- |
 | [usage guide](usage.md) | installation patterns and complete examples |
 | [api reference](api.md) | client signatures, return models, and public names |
+| [generated api](reference.md) | signatures and docstrings read from the package |
 | [reliability and request behavior](reliability.md) | timeouts, retries, rate limits, errors, and request counts |
-| [v1 to v2 migration guide](../MIGRATION.md) | replacements for removed v1 behavior |
-| [contribution guide](../CONTRIBUTING.md) | local setup, tests, style, and pull requests |
-| [release process](../RELEASING.md) | versioning, verification, and trusted publishing |
-| [changelog](../CHANGELOG.md) | released and pending user-visible changes |
+| [v1 to v2 migration guide](https://github.com/jtayped/mercapy/blob/main/MIGRATION.md) | replacements for removed v1 behavior |
+| [contribution guide](https://github.com/jtayped/mercapy/blob/main/CONTRIBUTING.md) | local setup, tests, style, and pull requests |
+| [release process](https://github.com/jtayped/mercapy/blob/main/RELEASING.md) | versioning, verification, and trusted publishing |
+| [changelog](https://github.com/jtayped/mercapy/blob/main/CHANGELOG.md) | released and pending user-visible changes |
 
 ## support policy
 
