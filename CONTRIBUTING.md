@@ -1,18 +1,18 @@
-# Contributing
+# contributing
 
-Mercapy talks to an undocumented third-party service. Keep normal tests offline
-and use committed fixtures for every upstream response shape.
+mercapy uses undocumented third-party services. normal tests must stay offline,
+and every supported response shape needs a committed fixture.
 
-## Development setup
+## development setup
 
-Use any supported CPython version from 3.11 through 3.14:
+use cpython 3.11 through 3.14:
 
 ```bash
 python -m venv .venv
 .venv/bin/python -m pip install -e '.[dev]'
 ```
 
-Run the same checks as CI:
+run the same checks as ci:
 
 ```bash
 .venv/bin/ruff format --check .
@@ -23,28 +23,41 @@ Run the same checks as CI:
 .venv/bin/twine check dist/*
 ```
 
-Ruff can apply formatting with `.venv/bin/ruff format .`.
+run `.venv/bin/ruff format .` to apply python formatting.
 
-## Tests
+## tests
 
-Tests use `httpx.MockTransport`. Do not add routine tests that contact Mercadona
-or Algolia. Add small, scrubbed JSON files under `tests/fixtures` for new response
-shapes. Test exact request paths, query parameters, and call counts when changing
-client behavior.
+tests use `httpx.MockTransport`. do not add routine tests that contact mercadona
+or algolia. add small, scrubbed json files under `tests/fixtures` for new response
+shapes. changes to client behavior should test exact request paths, parameters,
+and request counts.
 
-The suite requires at least 90% branch coverage. It must also prove that model
-attribute access causes no I/O and that optional or unknown fields do not break
-otherwise usable responses.
+the suite requires at least 90% branch coverage. tests must also confirm that
+model access performs no i/o and that absent optional fields or unknown fields do
+not break an otherwise usable response.
 
-## Supported Python policy
+the live smoke workflow is the only routine upstream check. it makes four calls
+once a week or when started manually.
 
-Mercapy supports CPython 3.11, 3.12, 3.13, and 3.14. CI runs tests on all four.
-A release may drop a Python version only in a new major Mercapy release. Support
-for a new stable CPython version can be added in a minor release after CI and the
-built-wheel import check pass on that version.
+## documentation
 
-## Pull requests
+write headings and prose in lowercase. preserve the exact spelling of code,
+identifiers, commands, paths, urls, and quoted output. use short examples that
+can run as written. state request counts for examples that make more than one
+request.
 
-Keep changes focused. Update the README and migration guide when public behavior
-changes, add a changelog entry, and include tests. The live smoke workflow is for
-small manual or weekly checks, not feature development.
+update the api reference and migration guide when public behavior changes. add a
+changelog entry for every user-visible change.
+
+## supported python policy
+
+mercapy supports cpython 3.11, 3.12, 3.13, and 3.14. ci runs the test suite on all
+four versions. removing a supported version requires a new major mercapy release.
+a minor release may add a stable cpython version after its tests and clean-wheel
+import check pass.
+
+## pull requests
+
+keep each pull request focused. include tests for behavior changes and do not
+commit build output, virtual environments, credentials, or live api responses
+that contain unnecessary data.
