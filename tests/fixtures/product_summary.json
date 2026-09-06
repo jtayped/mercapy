@@ -1,0 +1,52 @@
+{
+  "id": "1001",
+  "slug": "leche-entera-hacendado-brick",
+  "brand": "Hacendado",
+  "limit": 999,
+  "badges": {
+    "is_water": false,
+    "requires_age_check": false
+  },
+  "status": null,
+  "packaging": "Brick",
+  "published": true,
+  "share_url": "https://tienda.mercadona.es/product/1001/leche-entera-hacendado-brick",
+  "thumbnail": "https://prod-mercadona.imgix.net/images/milk.jpg?fit=crop&h=300&w=300",
+  "categories": [
+    {
+      "id": 6,
+      "name": "Huevos, leche y mantequilla",
+      "level": 0,
+      "order": 3,
+      "unknown_category_field": "ignored"
+    }
+  ],
+  "display_name": "Leche entera Hacendado",
+  "main_feature": null,
+  "unavailable_from": null,
+  "price_instructions": {
+    "is_new": true,
+    "is_pack": false,
+    "pack_size": null,
+    "unit_name": "ud.",
+    "unit_size": 1.0,
+    "bulk_price": "1.2300",
+    "unit_price": "1.23",
+    "approx_size": false,
+    "size_format": "l",
+    "total_units": 1,
+    "tax_percentage": "4.000",
+    "price_decreased": true,
+    "reference_price": "1.2300",
+    "min_bunch_amount": 1.0,
+    "reference_format": "L",
+    "previous_unit_price": "        1.30",
+    "increment_bunch_amount": 1.0,
+    "new_price_field": "ignored"
+  },
+  "unavailable_weekdays": [0, 6],
+  "is_new_arrival": true,
+  "unknown_product_field": {
+    "future": true
+  }
+}

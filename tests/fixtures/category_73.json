@@ -1,0 +1,34 @@
+{
+  "id": 73,
+  "name": "Huevos",
+  "order": 5,
+  "layout": 1,
+  "published": true,
+  "is_extended": false,
+  "categories": [
+    {
+      "id": 344,
+      "name": "Huevos de gallina",
+      "order": 5,
+      "level": 2,
+      "layout": 2,
+      "published": true,
+      "products": [
+        {
+          "id": "1001",
+          "display_name": "Leche entera Hacendado",
+          "price_instructions": {
+            "unit_price": "1.23"
+          }
+        },
+        {
+          "id": "3003",
+          "display_name": "Huevos grandes",
+          "price_instructions": {
+            "unit_price": "2.95"
+          }
+        }
+      ]
+    }
+  ]
+}

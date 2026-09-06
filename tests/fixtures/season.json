@@ -1,0 +1,19 @@
+{
+  "title": "Vuelta al cole",
+  "layout": "detail",
+  "source": "back-to-school",
+  "source_code": "SN",
+  "items": [
+    {
+      "id": "3003",
+      "display_name": "Huevos grandes",
+      "price_instructions": {
+        "unit_price": "2.95"
+      }
+    }
+  ],
+  "uuid": "season-uuid",
+  "new_field": {
+    "ignored": true
+  }
+}

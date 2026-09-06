@@ -1,0 +1,15 @@
+{
+  "id": 2002,
+  "display_name": "Producto mínimo",
+  "photos": null,
+  "details": null,
+  "nutrition_information": null,
+  "price_instructions": {
+    "unit_price": null,
+    "unit_size": "not-a-number"
+  },
+  "categories": null,
+  "unavailable_weekdays": null,
+  "brand": null,
+  "future_payload": [1, 2, 3]
+}

@@ -1,0 +1,17 @@
+{
+  "title": "Novedades",
+  "layout": "carousel",
+  "source": "new-arrivals",
+  "source_code": "NA",
+  "items": [
+    {
+      "id": "1001",
+      "display_name": "Leche entera Hacendado",
+      "is_new_arrival": true,
+      "price_instructions": {
+        "unit_price": "1.23"
+      }
+    }
+  ],
+  "uuid": "new-arrivals-id"
+}

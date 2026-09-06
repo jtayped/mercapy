@@ -1,0 +1,29 @@
+{
+  "id": 72,
+  "name": "Leche y bebidas vegetales",
+  "order": 4,
+  "layout": 1,
+  "published": true,
+  "is_extended": false,
+  "categories": [
+    {
+      "id": 343,
+      "name": "Leche",
+      "order": 4,
+      "level": 2,
+      "layout": 2,
+      "published": true,
+      "products": [
+        {
+          "id": "1001",
+          "display_name": "Leche entera Hacendado",
+          "thumbnail": "https://prod-mercadona.imgix.net/images/milk.jpg",
+          "price_instructions": {
+            "unit_price": "1.23"
+          }
+        }
+      ]
+    }
+  ],
+  "next_category": null
+}
