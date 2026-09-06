@@ -1,0 +1,44 @@
+name: Live smoke
+
+on:
+  schedule:
+    - cron: "17 4 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Install package
+        run: python -m pip install .
+      - name: Run four-call smoke test
+        run: |
+          python - <<'PY'
+          from mercapy import Mercadona, RetryPolicy
+
+          retry = RetryPolicy(max_attempts=2, backoff_factor=0.1, max_delay=1.0)
+          with Mercadona.from_postal_code(
+              "28001", timeout=5.0, retry_policy=retry
+          ) as client:
+              result = client.search_products("leche", page_size=1)
+              if not result.products:
+                  raise RuntimeError("live search returned no products")
+              client.get_product(result.products[0].id)
+              if not client.get_categories():
+                  raise RuntimeError("live categories response was empty")
+          PY

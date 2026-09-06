@@ -1,0 +1,107 @@
+{
+  "id": "1001",
+  "ean": "8480000001001",
+  "slug": "leche-entera-hacendado-brick",
+  "brand": "Hacendado",
+  "limit": 999,
+  "badges": {
+    "is_water": false,
+    "requires_age_check": false
+  },
+  "origin": "España",
+  "photos": [
+    {
+      "zoom": "https://prod-mercadona.imgix.net/images/milk.jpg?fit=crop&h=3600&w=3600",
+      "regular": "https://prod-mercadona.imgix.net/images/milk.jpg?fit=crop&h=600&w=600",
+      "thumbnail": "https://prod-mercadona.imgix.net/images/milk.jpg?fit=crop&h=300&w=300",
+      "perspective": 2
+    },
+    {
+      "zoom": "https://prod-mercadona.imgix.net/images/milk-back.jpg?fit=crop&h=3600&w=3600",
+      "perspective": 9
+    },
+    {
+      "perspective": 10
+    }
+  ],
+  "status": null,
+  "details": {
+    "brand": "Hacendado",
+    "origin": null,
+    "suppliers": [
+      {
+        "name": "Proveedor Uno"
+      },
+      {
+        "name": "Proveedor Dos"
+      },
+      {
+        "unexpected": true
+      }
+    ],
+    "legal_name": "Leche entera UHT",
+    "description": "Leche entera",
+    "counter_info": null,
+    "danger_mentions": "",
+    "alcohol_by_volume": "5,4º",
+    "mandatory_mentions": "Conservar en frío una vez abierto",
+    "production_variant": "",
+    "usage_instructions": "Agitar antes de usar",
+    "storage_instructions": "Lugar fresco y seco",
+    "is_prepared_by_mercadona": false,
+    "future_detail": 42
+  },
+  "is_bulk": false,
+  "packaging": "Brick",
+  "published": true,
+  "share_url": "https://tienda.mercadona.es/product/1001/leche-entera-hacendado-brick",
+  "thumbnail": "https://prod-mercadona.imgix.net/images/milk.jpg?fit=crop&h=300&w=300",
+  "categories": [
+    {
+      "id": 6,
+      "name": "Huevos, leche y mantequilla",
+      "level": 0,
+      "order": 3,
+      "categories": [
+        {
+          "id": 72,
+          "name": "Leche y bebidas vegetales",
+          "level": 1,
+          "order": 4
+        }
+      ]
+    }
+  ],
+  "display_name": "Leche entera Hacendado",
+  "main_feature": null,
+  "unavailable_from": null,
+  "is_variable_weight": false,
+  "price_instructions": {
+    "is_new": false,
+    "is_pack": false,
+    "pack_size": null,
+    "unit_name": "ud.",
+    "unit_size": 1.0,
+    "bulk_price": "1.2300",
+    "unit_price": "1.23",
+    "approx_size": false,
+    "size_format": "l",
+    "total_units": 1,
+    "drained_weight": null,
+    "tax_percentage": "4.000",
+    "price_decreased": true,
+    "reference_price": "1.2300",
+    "min_bunch_amount": 1.0,
+    "reference_format": "L",
+    "previous_unit_price": "        1.30",
+    "increment_bunch_amount": 1.0
+  },
+  "unavailable_weekdays": [],
+  "nutrition_information": {
+    "allergens": "Contiene leche",
+    "ingredients": "Leche de vaca"
+  },
+  "is_new_arrival": false,
+  "color_variants": null,
+  "unknown_top_level": "ignored"
+}

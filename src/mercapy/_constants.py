@@ -1,0 +1,5 @@
+API_URL = "https://tienda.mercadona.es"
+IMAGE_URL = "https://prod-mercadona.imgix.net/images"
+ALGOLIA_URL = "https://7uzjkl1dj0-dsn.algolia.net"
+ALGOLIA_APP_ID = "7UZJKL1DJ0"
+ALGOLIA_API_KEY = "9d8f2e39e90df472b4f2e559a116fe17"

@@ -1,0 +1,30 @@
+{
+  "hits": [
+    {
+      "id": "1001",
+      "display_name": "Leche entera Hacendado",
+      "brand": "Hacendado",
+      "thumbnail": "https://prod-mercadona.imgix.net/images/milk.jpg?fit=crop&h=300&w=300",
+      "price_instructions": {
+        "unit_price": "1.23",
+        "bulk_price": "1.2300",
+        "previous_unit_price": "        1.30"
+      },
+      "categories": [],
+      "badges": {}
+    },
+    {
+      "id": "2002",
+      "display_name": "Leche sin lactosa",
+      "price_instructions": {
+        "unit_price": "1.345"
+      }
+    }
+  ],
+  "hitsPerPage": 2,
+  "nbHits": 7,
+  "nbPages": 4,
+  "page": 2,
+  "processingTimeMS": 3,
+  "future_search_field": true
+}

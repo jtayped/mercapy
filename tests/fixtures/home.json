@@ -1,0 +1,81 @@
+{
+  "sections": [
+    {
+      "layout": "notification",
+      "content": {
+        "action": "/categories",
+        "event_key": "notice",
+        "title": "Entrega disponible",
+        "type": "info"
+      }
+    },
+    {
+      "layout": "carousel",
+      "content": {
+        "uuid": "carousel-one",
+        "title": "Favoritos",
+        "subtitle": null,
+        "source": "favorites",
+        "source_code": "FV",
+        "show_more": true,
+        "items": [
+          {
+            "id": "1001",
+            "display_name": "Leche entera Hacendado",
+            "price_instructions": {
+              "unit_price": "1.23"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "layout": "carousel",
+      "content": {
+        "uuid": "carousel-two",
+        "title": "Más vendidos",
+        "items": [
+          {
+            "id": "3003",
+            "display_name": "Huevos grandes",
+            "price_instructions": {
+              "unit_price": "2.95"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "layout": "banner",
+      "content": {
+        "title": "Temporada",
+        "subtitle": "Ideas del mes",
+        "items": [
+          {
+            "id": 186,
+            "title": "Vuelta al cole",
+            "campaign_id": "back-to-school",
+            "image_url": "https://example.test/banner.jpg",
+            "text_color": "white",
+            "bg_colors": ["black", "transparent"],
+            "button_color": "green",
+            "api_path": "/home/sections/season-uuid/",
+            "future_banner_field": true
+          }
+        ]
+      }
+    },
+    {
+      "layout": "future-layout",
+      "content": {
+        "title": "Future",
+        "items": [
+          {
+            "unknown": true
+          }
+        ]
+      }
+    }
+  ],
+  "future_home_field": true
+}
