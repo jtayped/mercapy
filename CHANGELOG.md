@@ -13,6 +13,7 @@ this project follows [semantic versioning](https://semver.org/).
 - security linting for library and maintenance code.
 - opt-in per-client request pacing and jittered retry delays.
 - a generated api reference and a github pages documentation workflow.
+- security, conduct, issue, and pull request guidance.
 
 ### changed
 
@@ -21,6 +22,7 @@ this project follows [semantic versioning](https://semver.org/).
   version.
 - configured dependabot to preserve compatible runtime dependency ranges.
 - added lowercase package metadata and documentation links.
+- replaced the generic python ignore list with project-specific entries.
 
 ## [2.0.0] - 2026-09-06
 
