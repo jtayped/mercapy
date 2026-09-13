@@ -20,6 +20,7 @@ class Language(StrEnum):
 
     SPANISH = "es"
     ENGLISH = "en"
+    CATALAN = "ca"
 
 
 class PhotoFit(StrEnum):
@@ -259,6 +260,16 @@ class SearchResult:
     total_pages: int
     processing_time_ms: int | None
     products: tuple[ProductSummary, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class CatalogResult:
+    """a warehouse's product index collected through category partitions."""
+
+    products: tuple[ProductSummary, ...]
+    reported_total_hits: int
+    queried_category_ids: tuple[str, ...]
+    reconciled: bool
 
 
 def _object(value: object) -> JsonObject:

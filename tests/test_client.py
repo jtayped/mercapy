@@ -61,6 +61,11 @@ def test_invalid_language_is_rejected(language: str) -> None:
         Mercadona("mad3", language=language)
 
 
+def test_catalan_language_is_supported() -> None:
+    with Mercadona("mad3", language="ca") as client:
+        assert client.language is Language.CATALAN
+
+
 @pytest.mark.parametrize("timeout", ["soon", 0, -1, float("nan"), float("inf"), True])
 def test_invalid_timeout_is_rejected(timeout: Any) -> None:
     with pytest.raises(ConfigurationError, match="timeout"):
@@ -195,6 +200,74 @@ def test_search_encodes_query_and_parses_pagination(load_fixture: Any) -> None:
     assert result.processing_time_ms == 3
     assert tuple(product.id for product in result.products) == ("1001", "2002")
     assert result.products[1].price.unit == Decimal("1.345")
+
+
+def test_search_can_filter_by_top_level_category(load_fixture: Any) -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return json_response(request, load_fixture("search.json"))
+
+    with Mercadona("mad3", transport=httpx.MockTransport(handler)) as client:
+        client.search_products("", top_level_category_id=20)
+
+    assert json.loads(requests[0].read()) == {
+        "params": "query=&page=0&hitsPerPage=20&filters=categories.id%3A20"
+    }
+
+
+def test_indexed_catalog_partitions_paginates_and_reconciles(
+    load_fixture: Any,
+) -> None:
+    requests: list[httpx.Request] = []
+    search = load_fixture("search.json")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        params = json.loads(request.read())["params"]
+        if "facets=" in params:
+            return json_response(
+                request,
+                {
+                    "hits": [],
+                    "nbHits": 3,
+                    "nbPages": 0,
+                    "facets": {"categories.id": {"6": 2, "7": 2}},
+                },
+            )
+        if "categories.id%3A6" in params:
+            return json_response(
+                request,
+                {
+                    **search,
+                    "hits": search["hits"],
+                    "nbHits": 2,
+                    "nbPages": 1,
+                    "page": 0,
+                    "hitsPerPage": 1000,
+                },
+            )
+        return json_response(
+            request,
+            {
+                **search,
+                "hits": [search["hits"][1], {**search["hits"][0], "id": "3003"}],
+                "nbHits": 2,
+                "nbPages": 1,
+                "page": 0,
+                "hitsPerPage": 1000,
+            },
+        )
+
+    with Mercadona("mad3", transport=httpx.MockTransport(handler)) as client:
+        result = client.get_indexed_catalog()
+
+    assert result.reported_total_hits == 3
+    assert result.queried_category_ids == ("6", "7")
+    assert result.reconciled
+    assert tuple(product.id for product in result.products) == ("1001", "2002", "3003")
+    assert len(requests) == 3
 
 
 @pytest.mark.parametrize(

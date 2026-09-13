@@ -31,6 +31,7 @@ from .exceptions import (
     TransportError,
 )
 from .models import (
+    CatalogResult,
     Category,
     HomeSection,
     JsonObject,
@@ -185,7 +186,7 @@ class Mercadona:
         try:
             self._language = Language(language)
         except ValueError as error:
-            raise ConfigurationError("language must be 'es' or 'en'") from error
+            raise ConfigurationError("language must be 'es', 'en', or 'ca'") from error
         self._retry_policy = retry_policy or RetryPolicy()
         self._min_request_interval = _validate_request_interval(min_request_interval)
         self._request_lock = Lock()
@@ -289,7 +290,12 @@ class Mercadona:
         self.close()
 
     def search_products(
-        self, query: str, *, page: int = 0, page_size: int = 20
+        self,
+        query: str,
+        *,
+        page: int = 0,
+        page_size: int = 20,
+        top_level_category_id: str | int | None = None,
     ) -> SearchResult:
         """search one zero-based page of product summaries."""
 
@@ -304,22 +310,70 @@ class Mercadona:
         ):
             raise ConfigurationError("page_size must be between 1 and 1000")
 
-        index = f"products_prod_{self._warehouse}_{self._language.value}"
-        url = f"{ALGOLIA_URL}/1/indexes/{quote(index, safe='')}/query"
-        parameters = urlencode(
-            (("query", query), ("page", page), ("hitsPerPage", page_size))
+        category_id = (
+            _validate_identifier(top_level_category_id, "top_level_category_id")
+            if top_level_category_id is not None
+            else None
         )
-        data = self._request_json(
-            "POST",
-            url,
-            headers={
-                "x-algolia-application-id": ALGOLIA_APP_ID,
-                "x-algolia-api-key": ALGOLIA_API_KEY,
-            },
-            json={"params": parameters},
+        data = self._search_data(
+            query=query,
+            page=page,
+            page_size=page_size,
+            top_level_category_id=category_id,
         )
         return parse_search_result(
             data, query=query, requested_page=page, requested_page_size=page_size
+        )
+
+    def get_indexed_catalog(self) -> CatalogResult:
+        """collect the complete Algolia index through top-category partitions."""
+
+        overview = self._search_data(
+            query="",
+            page=0,
+            page_size=1,
+            facets="categories.id",
+            max_values_per_facet=1000,
+        )
+        reported_total_hits = overview.get("nbHits")
+        if (
+            isinstance(reported_total_hits, bool)
+            or not isinstance(reported_total_hits, int)
+            or reported_total_hits < 0
+        ):
+            raise InvalidResponseError("catalog index response has no usable hit count")
+        facets = overview.get("facets")
+        if not isinstance(facets, dict):
+            raise InvalidResponseError("catalog index response has no facets object")
+        category_counts = facets.get("categories.id")
+        if not isinstance(category_counts, dict) or not category_counts:
+            raise InvalidResponseError("catalog index has no top-level category facets")
+        category_ids = tuple(sorted(str(value) for value in category_counts))
+
+        products: list[ProductSummary] = []
+        seen: set[str] = set()
+        for category_id in category_ids:
+            page = 0
+            while True:
+                result = self.search_products(
+                    "",
+                    page=page,
+                    page_size=1000,
+                    top_level_category_id=category_id,
+                )
+                for product in result.products:
+                    if product.id not in seen:
+                        seen.add(product.id)
+                        products.append(product)
+                page += 1
+                if page >= result.total_pages:
+                    break
+
+        return CatalogResult(
+            products=tuple(products),
+            reported_total_hits=reported_total_hits,
+            queried_category_ids=category_ids,
+            reconciled=len(products) == reported_total_hits,
         )
 
     def get_product(self, product_id: str | int) -> Product:
@@ -435,6 +489,39 @@ class Mercadona:
             "GET",
             f"{API_URL}{path}",
             params={"lang": self._language.value, "wh": self._warehouse},
+        )
+
+    def _search_data(
+        self,
+        *,
+        query: str,
+        page: int,
+        page_size: int,
+        top_level_category_id: str | None = None,
+        facets: str | None = None,
+        max_values_per_facet: int | None = None,
+    ) -> JsonObject:
+        index = f"products_prod_{self._warehouse}_{self._language.value}"
+        url = f"{ALGOLIA_URL}/1/indexes/{quote(index, safe='')}/query"
+        parameters: list[tuple[str, str | int]] = [
+            ("query", query),
+            ("page", page),
+            ("hitsPerPage", page_size),
+        ]
+        if top_level_category_id is not None:
+            parameters.append(("filters", f"categories.id:{top_level_category_id}"))
+        if facets is not None:
+            parameters.append(("facets", facets))
+        if max_values_per_facet is not None:
+            parameters.append(("maxValuesPerFacet", max_values_per_facet))
+        return self._request_json(
+            "POST",
+            url,
+            headers={
+                "x-algolia-application-id": ALGOLIA_APP_ID,
+                "x-algolia-api-key": ALGOLIA_API_KEY,
+            },
+            json={"params": urlencode(parameters)},
         )
 
     def _request_json(self, method: str, url: str, **kwargs: Any) -> JsonObject:

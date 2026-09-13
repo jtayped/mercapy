@@ -45,18 +45,14 @@ def test_discovery_bounds_concurrency(workers: int) -> None:
 def test_lookup_warehouse_uses_header(monkeypatch: pytest.MonkeyPatch) -> None:
     request = httpx.Request("PUT", "https://example.test")
     response = httpx.Response(200, request=request, headers={"X-Customer-Wh": "mad3"})
-    monkeypatch.setattr(
-        "scripts.discover_warehouses.httpx.put", lambda *a, **k: response
-    )
+    monkeypatch.setattr("mercapy.discovery.httpx.put", lambda *a, **k: response)
     assert lookup_warehouse("28001") == "mad3"
 
 
 def test_lookup_warehouse_wraps_http_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     request = httpx.Request("PUT", "https://example.test")
     response = httpx.Response(503, request=request)
-    monkeypatch.setattr(
-        "scripts.discover_warehouses.httpx.put", lambda *a, **k: response
-    )
+    monkeypatch.setattr("mercapy.discovery.httpx.put", lambda *a, **k: response)
     with pytest.raises(TransportError):
         lookup_warehouse("28001")
 
@@ -64,9 +60,7 @@ def test_lookup_warehouse_wraps_http_errors(monkeypatch: pytest.MonkeyPatch) -> 
 def test_lookup_warehouse_requires_header(monkeypatch: pytest.MonkeyPatch) -> None:
     request = httpx.Request("PUT", "https://example.test")
     response = httpx.Response(200, request=request)
-    monkeypatch.setattr(
-        "scripts.discover_warehouses.httpx.put", lambda *a, **k: response
-    )
+    monkeypatch.setattr("mercapy.discovery.httpx.put", lambda *a, **k: response)
     with pytest.raises(InvalidResponseError, match="X-Customer-Wh"):
         lookup_warehouse("28001")
 
