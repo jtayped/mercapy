@@ -4,8 +4,14 @@ this project follows [semantic versioning](https://semver.org/).
 
 ## [unreleased]
 
+## [2.1.0] - 2026-09-13
+
 ### added
 
+- catalan storefront responses through `Language.CATALAN` and `"ca"`.
+- category-filtered search and complete indexed catalog collection with upstream
+  hit-count reconciliation.
+- public postcode-to-warehouse discovery functions under `mercapy.discovery`.
 - a documentation index and separate usage, api, and reliability references,
   with checks for lowercase prose, local links, and python snippet syntax.
 - ci coverage for the minimum supported python and httpx versions.

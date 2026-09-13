@@ -23,7 +23,8 @@ creates a synchronous client scoped to one warehouse. warehouse codes contain 2
 to 16 letters or digits and are normalized to lowercase. construction performs
 no request.
 
-`language` accepts `Language.SPANISH`, `Language.ENGLISH`, `"es"`, or `"en"`.
+`language` accepts `Language.SPANISH`, `Language.ENGLISH`, `Language.CATALAN`,
+`"es"`, `"en"`, or `"ca"`.
 `timeout` accepts a positive finite number or `httpx.Timeout`. `transport` accepts
 an `httpx.BaseTransport` and is mainly useful for tests. a positive
 `min_request_interval` sets the minimum time between request starts for that
@@ -59,12 +60,13 @@ request, and returns a configured `Mercadona` client.
 
 | method | return type | requests |
 | --- | --- | ---: |
-| `search_products(query, *, page=0, page_size=20)` | `SearchResult` | 1 |
+| `search_products(query, *, page=0, page_size=20, top_level_category_id=None)` | `SearchResult` | 1 |
 | `get_product(product_id)` | `Product` | 1 |
 | `get_new_arrivals()` | `tuple[ProductSummary, ...]` | 1 |
 
-search pages start at zero. `page_size` must be between 1 and 1000. product ids
-may be strings or integers and become strings in returned models.
+search pages start at zero. `page_size` must be between 1 and 1000. the optional
+`top_level_category_id` limits results to one top-level storefront category.
+product ids may be strings or integers and become strings in returned models.
 
 ### category methods
 
@@ -73,9 +75,15 @@ may be strings or integers and become strings in returned models.
 | `get_categories()` | `tuple[Category, ...]` | 1 |
 | `get_category(category_id)` | `Category` | 1 |
 | `get_catalog()` | `tuple[ProductSummary, ...]` | variable |
+| `get_indexed_catalog()` | `CatalogResult` | variable |
 
 `get_catalog()` makes one category-tree request and one request for each direct
 child in the returned top-level category tree. it deduplicates products by id.
+
+`get_indexed_catalog()` reads the search index through top-level category
+partitions, paginates each partition, and deduplicates products by id. its
+`CatalogResult.reconciled` field reports whether the collected unique-product
+count matches the index's reported total.
 
 ### home methods
 
@@ -147,6 +155,7 @@ tuple. ids use `str`, and numeric prices and quantities use `Decimal`.
 | `SeasonSummary` | `id`, `title`, `banner_id`, `campaign_id`, `image_url`, `text_color`, `background_colors`, `button_color` |
 | `Season` | `id`, `title`, `layout`, `source`, `source_code`, `products` |
 | `SearchResult` | `query`, `page`, `page_size`, `total_hits`, `total_pages`, `processing_time_ms`, `products` |
+| `CatalogResult` | `products`, `reported_total_hits`, `queried_category_ids`, `reconciled` |
 
 `HomeSection.items` may contain `ProductSummary`, `SeasonSummary`, or
 `HomeNotification` values.
@@ -157,8 +166,16 @@ tuple. ids use `str`, and numeric prices and quantities use `Decimal`.
 `url(*, width=None, height=None, fit="crop")` method returns a string and performs
 no i/o. invalid dimensions, fit values, and filenames raise `ValueError`.
 
-`Language` is a string enum with `SPANISH = "es"` and `ENGLISH = "en"`.
+`Language` is a string enum with `SPANISH = "es"`, `ENGLISH = "en"`, and
+`CATALAN = "ca"`.
 `PhotoFit` is a string enum with `CROP = "crop"` and `FIT = "fit"`.
+
+## warehouse discovery
+
+`resolve_warehouse(postal_code)` resolves one validated spanish postcode.
+`discover_warehouses(postal_codes, *, max_workers=5)` resolves an explicit
+iterable and returns its postcode-to-warehouse mapping. callers own the source
+and scope of the postcode list.
 
 ## exceptions
 

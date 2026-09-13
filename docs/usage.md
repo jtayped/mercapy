@@ -30,7 +30,7 @@ with Mercadona(
     print(mercadona.language)
 ```
 
-supported language values are `"es"` and `"en"`. this example also keeps at
+supported language values are `"es"`, `"en"`, and `"ca"`. this example also keeps at
 least 0.25 seconds between request starts made by the client.
 
 ## search products
@@ -99,6 +99,20 @@ from mercapy import Mercadona
 
 with Mercadona("mad3") as mercadona:
     catalog = mercadona.get_catalog()
+```
+
+for the complete searchable catalog, use `get_indexed_catalog()`. it partitions
+the index by top-level category to stay within the search service's result cap.
+always check `reconciled` before accepting a collection as complete.
+
+```python
+from mercapy import Mercadona
+
+with Mercadona("mad3", language="ca") as mercadona:
+    catalog = mercadona.get_indexed_catalog()
+    if not catalog.reconciled:
+        raise RuntimeError("the catalog did not match the upstream hit count")
+    print(len(catalog.products))
 ```
 
 ## read home sections and seasons

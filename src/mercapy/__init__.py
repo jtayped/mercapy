@@ -2,6 +2,7 @@
 
 from ._version import __version__
 from .client import Mercadona, RetryPolicy
+from .discovery import discover_warehouses, resolve_warehouse
 from .exceptions import (
     ConfigurationError,
     InvalidResponseError,
@@ -12,6 +13,7 @@ from .exceptions import (
 )
 from .models import (
     Availability,
+    CatalogResult,
     Category,
     HomeNotification,
     HomeSection,
@@ -30,6 +32,7 @@ from .models import (
 
 __all__ = [
     "Availability",
+    "CatalogResult",
     "Category",
     "ConfigurationError",
     "HomeNotification",
@@ -53,4 +56,6 @@ __all__ = [
     "SeasonSummary",
     "TransportError",
     "__version__",
+    "discover_warehouses",
+    "resolve_warehouse",
 ]
