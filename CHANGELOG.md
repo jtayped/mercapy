@@ -4,6 +4,15 @@ this project follows [semantic versioning](https://semver.org/).
 
 ## [unreleased]
 
+## [2.2.0] - 2026-09-14
+
+### added
+
+- `get_indexed_catalog()` falls back to score-range partitions on an index
+  that exposes no category facets, so warehouses whose catalan index is not
+  faceted still collect completely. `CatalogResult` gains
+  `queried_score_ranges` and a `partition_count` property.
+
 ## [2.1.0] - 2026-09-13
 
 ### added

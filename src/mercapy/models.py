@@ -264,12 +264,23 @@ class SearchResult:
 
 @dataclass(frozen=True, slots=True)
 class CatalogResult:
-    """a warehouse's product index collected through category partitions."""
+    """a warehouse's product index collected through partitions.
+
+    an index with category facets is partitioned by top-level category; one
+    without them is partitioned by half-open score ranges instead.
+    """
 
     products: tuple[ProductSummary, ...]
     reported_total_hits: int
     queried_category_ids: tuple[str, ...]
     reconciled: bool
+    queried_score_ranges: tuple[tuple[float, float], ...] = ()
+
+    @property
+    def partition_count(self) -> int:
+        """how many partitions were queried, whichever kind they were."""
+
+        return len(self.queried_category_ids) + len(self.queried_score_ranges)
 
 
 def _object(value: object) -> JsonObject:
