@@ -74,7 +74,7 @@ def test_core_identity_is_required(parser: object, payload: object) -> None:
 
 
 def test_public_api_is_deliberate_and_versioned() -> None:
-    assert mercapy.__version__ == "2.1.0"
+    assert mercapy.__version__ == "2.2.0"
     assert "Mercadona" in mercapy.__all__
     assert "CatalogResult" in mercapy.__all__
     assert "discover_warehouses" in mercapy.__all__

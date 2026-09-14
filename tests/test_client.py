@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import FrozenInstanceError
 from decimal import Decimal
 from typing import Any
+from urllib.parse import parse_qs
 
 import httpx
 import pytest
@@ -268,6 +270,88 @@ def test_indexed_catalog_partitions_paginates_and_reconciles(
     assert result.reconciled
     assert tuple(product.id for product in result.products) == ("1001", "2002", "3003")
     assert len(requests) == 3
+
+
+def _score_index(
+    scores: list[tuple[str, float]], summary: dict[str, object], requests: list[Any]
+) -> Any:
+    """a search index without facets whose only filterable attribute is score."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        params = parse_qs(json.loads(request.read())["params"], keep_blank_values=True)
+        if "facets" in params:
+            return json_response(
+                request,
+                {"hits": [], "nbHits": len(scores), "nbPages": 0, "facets": {}},
+            )
+        lower, upper = 0.0, math.inf
+        for clause in params["numericFilters"][0].split(","):
+            if clause.startswith("score>="):
+                lower = float(clause[len("score>=") :])
+            elif clause.startswith("score<"):
+                upper = float(clause[len("score<") :])
+        matched = [(pid, score) for pid, score in scores if lower <= score < upper]
+        size = int(params["hitsPerPage"][0])
+        hits = [{**summary, "id": pid, "score": score} for pid, score in matched[:size]]
+        return json_response(
+            request,
+            {
+                "hits": hits,
+                "nbHits": len(matched),
+                "nbPages": math.ceil(len(matched) / size) if size else 0,
+                "page": 0,
+                "hitsPerPage": size,
+            },
+        )
+
+    return handler
+
+
+def test_indexed_catalog_without_facets_partitions_by_score(
+    load_fixture: Any,
+) -> None:
+    requests: list[httpx.Request] = []
+    summary = load_fixture("search.json")["hits"][0]
+    scores = [(str(1000 + index), float(index)) for index in range(1, 1501)]
+
+    with Mercadona(
+        "4558", transport=httpx.MockTransport(_score_index(scores, summary, requests))
+    ) as client:
+        result = client.get_indexed_catalog()
+
+    assert result.reported_total_hits == 1500
+    assert result.reconciled
+    assert len(result.products) == 1500
+    assert result.queried_category_ids == ()
+    assert result.queried_score_ranges == (
+        (0.0, 512.0),
+        (512.0, 1024.0),
+        (1024.0, 2048.0),
+    )
+    assert result.partition_count == 3
+    # overview, two bound probes, and one query per visited range.
+    assert len(requests) == 10
+
+
+def test_indexed_catalog_score_ties_beyond_the_cap_stay_unreconciled(
+    load_fixture: Any,
+) -> None:
+    requests: list[httpx.Request] = []
+    summary = load_fixture("search.json")["hits"][0]
+    scores = [(str(index), 5.0) for index in range(1200)]
+
+    with Mercadona(
+        "4558", transport=httpx.MockTransport(_score_index(scores, summary, requests))
+    ) as client:
+        result = client.get_indexed_catalog()
+
+    assert not result.reconciled
+    assert len(result.products) == 1000
+    assert len(result.queried_score_ranges) == 1
+    lower, upper = result.queried_score_ranges[0]
+    assert lower <= 5.0 < upper
+    assert upper - lower <= 1e-6
 
 
 @pytest.mark.parametrize(

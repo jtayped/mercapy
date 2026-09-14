@@ -53,6 +53,15 @@ from .models import (
 _WAREHOUSE_PATTERN = re.compile(r"^[a-z0-9]{2,16}$")
 _POSTAL_CODE_PATTERN = re.compile(r"^(?:0[1-9]|[1-4][0-9]|5[0-2])\d{3}$")
 _RETRYABLE_STATUS_CODES = frozenset({500, 502, 503, 504})
+# the search service answers at most this many hits for one query, which is
+# why the catalog is partitioned at all.
+_INDEX_RESULT_CAP = 1000
+# score partitions: the upper bound starts here and grows by this factor
+# until a probe above it finds nothing; ranges stop halving at this width.
+_SCORE_UPPER_START = 1024.0
+_SCORE_GROWTH = 4
+_SCORE_BOUND_PROBES = 16
+_SCORE_RESOLUTION = 1e-6
 _JITTER = SystemRandom()
 
 
@@ -326,7 +335,14 @@ class Mercadona:
         )
 
     def get_indexed_catalog(self) -> CatalogResult:
-        """collect the complete Algolia index through top-category partitions."""
+        """collect the complete Algolia index through top-category partitions.
+
+        an index that exposes no category facets is partitioned by score
+        ranges instead: numeric filters work on every index, and a range that
+        reports more hits than the result cap is halved until it fits. records
+        without a score, or more tied scores than the cap, leave the result
+        unreconciled rather than silently short.
+        """
 
         overview = self._search_data(
             query="",
@@ -346,35 +362,83 @@ class Mercadona:
         if not isinstance(facets, dict):
             raise InvalidResponseError("catalog index response has no facets object")
         category_counts = facets.get("categories.id")
-        if not isinstance(category_counts, dict) or not category_counts:
-            raise InvalidResponseError("catalog index has no top-level category facets")
-        category_ids = tuple(sorted(str(value) for value in category_counts))
 
-        products: list[ProductSummary] = []
-        seen: set[str] = set()
-        for category_id in category_ids:
-            page = 0
-            while True:
-                result = self.search_products(
-                    "",
-                    page=page,
-                    page_size=1000,
-                    top_level_category_id=category_id,
-                )
-                for product in result.products:
-                    if product.id not in seen:
-                        seen.add(product.id)
-                        products.append(product)
-                page += 1
-                if page >= result.total_pages:
-                    break
+        products: dict[str, ProductSummary] = {}
+        score_ranges: tuple[tuple[float, float], ...] = ()
+        if isinstance(category_counts, dict) and category_counts:
+            category_ids = tuple(sorted(str(value) for value in category_counts))
+            for category_id in category_ids:
+                self._collect_category_partition(products, category_id)
+        else:
+            category_ids = ()
+            score_ranges = self._collect_score_partitions(products)
 
         return CatalogResult(
-            products=tuple(products),
+            products=tuple(products.values()),
             reported_total_hits=reported_total_hits,
             queried_category_ids=category_ids,
+            queried_score_ranges=score_ranges,
             reconciled=len(products) == reported_total_hits,
         )
+
+    def _collect_category_partition(
+        self, products: dict[str, ProductSummary], category_id: str
+    ) -> None:
+        page = 0
+        while True:
+            result = self.search_products(
+                "",
+                page=page,
+                page_size=_INDEX_RESULT_CAP,
+                top_level_category_id=category_id,
+            )
+            for product in result.products:
+                products.setdefault(product.id, product)
+            page += 1
+            if page >= result.total_pages:
+                break
+
+    def _score_partition(
+        self, lower: float, upper: float | None, *, page_size: int
+    ) -> SearchResult:
+        numeric_filters = f"score>={lower:.6f}"
+        if upper is not None:
+            numeric_filters += f",score<{upper:.6f}"
+        data = self._search_data(
+            query="", page=0, page_size=page_size, numeric_filters=numeric_filters
+        )
+        return parse_search_result(
+            data, query="", requested_page=0, requested_page_size=page_size
+        )
+
+    def _collect_score_partitions(
+        self, products: dict[str, ProductSummary]
+    ) -> tuple[tuple[float, float], ...]:
+        upper = _SCORE_UPPER_START
+        for _ in range(_SCORE_BOUND_PROBES):
+            if self._score_partition(upper, None, page_size=0).total_hits == 0:
+                break
+            upper *= _SCORE_GROWTH
+
+        ranges: list[tuple[float, float]] = []
+        pending: list[tuple[float, float]] = [(0.0, upper)]
+        while pending:
+            lower, upper = pending.pop()
+            result = self._score_partition(lower, upper, page_size=_INDEX_RESULT_CAP)
+            if result.total_hits == 0:
+                continue
+            if (
+                result.total_hits > _INDEX_RESULT_CAP
+                and upper - lower > _SCORE_RESOLUTION
+            ):
+                middle = (lower + upper) / 2
+                pending.append((middle, upper))
+                pending.append((lower, middle))
+                continue
+            ranges.append((lower, upper))
+            for product in result.products:
+                products.setdefault(product.id, product)
+        return tuple(ranges)
 
     def get_product(self, product_id: str | int) -> Product:
         """return a complete product record by id."""
@@ -500,6 +564,7 @@ class Mercadona:
         top_level_category_id: str | None = None,
         facets: str | None = None,
         max_values_per_facet: int | None = None,
+        numeric_filters: str | None = None,
     ) -> JsonObject:
         index = f"products_prod_{self._warehouse}_{self._language.value}"
         url = f"{ALGOLIA_URL}/1/indexes/{quote(index, safe='')}/query"
@@ -514,6 +579,8 @@ class Mercadona:
             parameters.append(("facets", facets))
         if max_values_per_facet is not None:
             parameters.append(("maxValuesPerFacet", max_values_per_facet))
+        if numeric_filters is not None:
+            parameters.append(("numericFilters", numeric_filters))
         return self._request_json(
             "POST",
             url,
