@@ -4,6 +4,17 @@ this project follows [semantic versioning](https://semver.org/).
 
 ## [unreleased]
 
+## [2.3.0] - 2026-10-04
+
+### changed
+
+- `get_indexed_catalog()` packs top-level categories into groups that fit
+  under the result cap and queries each group once with an `OR` filter, so a
+  faceted catalog of about 4,300 products takes 6 requests instead of 27. a
+  group that reports more hits than the cap is halved and retried.
+  `CatalogResult` gains `queried_category_groups`, and `partition_count` counts
+  each group as one partition.
+
 ## [2.2.0] - 2026-09-14
 
 ### added

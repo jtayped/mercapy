@@ -266,8 +266,9 @@ class SearchResult:
 class CatalogResult:
     """a warehouse's product index collected through partitions.
 
-    an index with category facets is partitioned by top-level category; one
-    without them is partitioned by half-open score ranges instead.
+    an index with category facets is partitioned by top-level category, with
+    categories packed into groups that each fit one query; one without them is
+    partitioned by half-open score ranges instead.
     """
 
     products: tuple[ProductSummary, ...]
@@ -275,12 +276,19 @@ class CatalogResult:
     queried_category_ids: tuple[str, ...]
     reconciled: bool
     queried_score_ranges: tuple[tuple[float, float], ...] = ()
+    queried_category_groups: tuple[tuple[str, ...], ...] = ()
 
     @property
     def partition_count(self) -> int:
-        """how many partitions were queried, whichever kind they were."""
+        """how many partitions were queried, whichever kind they were. a group
+        of categories queried together is one partition."""
 
-        return len(self.queried_category_ids) + len(self.queried_score_ranges)
+        categories = (
+            len(self.queried_category_groups)
+            if self.queried_category_groups
+            else len(self.queried_category_ids)
+        )
+        return categories + len(self.queried_score_ranges)
 
 
 def _object(value: object) -> JsonObject:

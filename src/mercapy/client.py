@@ -138,6 +138,39 @@ def _validate_identifier(value: str | int, label: str) -> str:
     return result
 
 
+def _category_filter(category_ids: tuple[str, ...]) -> str:
+    return " OR ".join(f"categories.id:{category_id}" for category_id in category_ids)
+
+
+def _pack_categories(counts: dict[str, object], cap: int) -> list[tuple[str, ...]]:
+    """first-fit decreasing over the facet counts: the fewest groups whose
+    summed counts stay within the cap. a product in two categories counts in
+    both, so a group's real hit count is at most its sum. a count that is not
+    a usable integer gets a group of its own."""
+
+    sizes = {
+        str(category_id): (
+            count
+            if isinstance(count, int) and not isinstance(count, bool) and count >= 0
+            else cap
+        )
+        for category_id, count in counts.items()
+    }
+    groups: list[list[str]] = []
+    totals: list[int] = []
+    for category_id in sorted(sizes, key=lambda key: (-sizes[key], key)):
+        size = sizes[category_id]
+        for index, total in enumerate(totals):
+            if total + size <= cap:
+                groups[index].append(category_id)
+                totals[index] += size
+                break
+        else:
+            groups.append([category_id])
+            totals.append(size)
+    return [tuple(sorted(group)) for group in groups]
+
+
 def _validate_timeout(timeout: float | httpx.Timeout) -> float | httpx.Timeout:
     if isinstance(timeout, httpx.Timeout):
         values = (timeout.connect, timeout.read, timeout.write, timeout.pool)
@@ -328,7 +361,7 @@ class Mercadona:
             query=query,
             page=page,
             page_size=page_size,
-            top_level_category_id=category_id,
+            filters=_category_filter((category_id,)) if category_id else None,
         )
         return parse_search_result(
             data, query=query, requested_page=page, requested_page_size=page_size
@@ -336,6 +369,10 @@ class Mercadona:
 
     def get_indexed_catalog(self) -> CatalogResult:
         """collect the complete Algolia index through top-category partitions.
+
+        top-level categories are packed into as few groups as the result cap
+        allows, using the overview's facet counts, and each group is one query.
+        a group that still reports more hits than the cap is halved.
 
         an index that exposes no category facets is partitioned by score
         ranges instead: numeric filters work on every index, and a range that
@@ -365,10 +402,11 @@ class Mercadona:
 
         products: dict[str, ProductSummary] = {}
         score_ranges: tuple[tuple[float, float], ...] = ()
+        groups: tuple[tuple[str, ...], ...] = ()
         if isinstance(category_counts, dict) and category_counts:
             category_ids = tuple(sorted(str(value) for value in category_counts))
-            for category_id in category_ids:
-                self._collect_category_partition(products, category_id)
+            for group in _pack_categories(category_counts, _INDEX_RESULT_CAP):
+                groups += self._collect_category_group(products, group)
         else:
             category_ids = ()
             score_ranges = self._collect_score_partitions(products)
@@ -378,19 +416,54 @@ class Mercadona:
             reported_total_hits=reported_total_hits,
             queried_category_ids=category_ids,
             queried_score_ranges=score_ranges,
+            queried_category_groups=groups,
             reconciled=len(products) == reported_total_hits,
         )
+
+    def _collect_category_group(
+        self, products: dict[str, ProductSummary], group: tuple[str, ...]
+    ) -> tuple[tuple[str, ...], ...]:
+        """query a group of categories at once and return the groups that were
+        actually queried: facet counts can move between the overview and the
+        query, so a group over the cap is split in two and each half retried."""
+
+        if len(group) == 1:
+            self._collect_category_partition(products, group[0])
+            return (group,)
+        data = self._search_data(
+            query="",
+            page=0,
+            page_size=_INDEX_RESULT_CAP,
+            filters=_category_filter(group),
+        )
+        result = parse_search_result(
+            data, query="", requested_page=0, requested_page_size=_INDEX_RESULT_CAP
+        )
+        if result.total_hits > _INDEX_RESULT_CAP:
+            middle = len(group) // 2
+            return self._collect_category_group(
+                products, group[:middle]
+            ) + self._collect_category_group(products, group[middle:])
+        for product in result.products:
+            products.setdefault(product.id, product)
+        return (group,)
 
     def _collect_category_partition(
         self, products: dict[str, ProductSummary], category_id: str
     ) -> None:
         page = 0
         while True:
-            result = self.search_products(
-                "",
+            data = self._search_data(
+                query="",
                 page=page,
                 page_size=_INDEX_RESULT_CAP,
-                top_level_category_id=category_id,
+                filters=_category_filter((category_id,)),
+            )
+            result = parse_search_result(
+                data,
+                query="",
+                requested_page=page,
+                requested_page_size=_INDEX_RESULT_CAP,
             )
             for product in result.products:
                 products.setdefault(product.id, product)
@@ -561,7 +634,7 @@ class Mercadona:
         query: str,
         page: int,
         page_size: int,
-        top_level_category_id: str | None = None,
+        filters: str | None = None,
         facets: str | None = None,
         max_values_per_facet: int | None = None,
         numeric_filters: str | None = None,
@@ -573,8 +646,8 @@ class Mercadona:
             ("page", page),
             ("hitsPerPage", page_size),
         ]
-        if top_level_category_id is not None:
-            parameters.append(("filters", f"categories.id:{top_level_category_id}"))
+        if filters is not None:
+            parameters.append(("filters", filters))
         if facets is not None:
             parameters.append(("facets", facets))
         if max_values_per_facet is not None:
