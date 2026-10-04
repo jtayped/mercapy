@@ -81,10 +81,14 @@ product ids may be strings or integers and become strings in returned models.
 child in the returned top-level category tree. it deduplicates products by id.
 
 `get_indexed_catalog()` reads the search index through top-level category
-partitions, paginates each partition, and deduplicates products by id. an
-index that exposes no category facets is read through half-open score ranges
-instead, each halved until it fits under the result cap; `queried_score_ranges`
-lists them and `partition_count` counts partitions of either kind. its
+partitions and deduplicates products by id. it packs categories into as few
+groups as the result cap allows, using the facet counts from its first
+request, and queries each group once; a group that reports more hits than the
+cap is halved. `queried_category_groups` lists the groups. a catalog of about
+4,300 products takes six requests. an index that exposes no category facets is
+read through half-open score ranges instead, each halved until it fits under
+the result cap; `queried_score_ranges` lists them and `partition_count` counts
+partitions of either kind. its
 `CatalogResult.reconciled` field reports whether the collected unique-product
 count matches the index's reported total.
 

@@ -103,7 +103,8 @@ with Mercadona("mad3") as mercadona:
 
 for the complete searchable catalog, use `get_indexed_catalog()`. it partitions
 the index by top-level category to stay within the search service's result cap,
-or by score ranges when an index exposes no category facets. always check
+packing categories into as few queries as the cap allows, or by score ranges
+when an index exposes no category facets. always check
 `reconciled` before accepting a collection as complete.
 
 ```python

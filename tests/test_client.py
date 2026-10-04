@@ -219,57 +219,147 @@ def test_search_can_filter_by_top_level_category(load_fixture: Any) -> None:
     }
 
 
-def test_indexed_catalog_partitions_paginates_and_reconciles(
-    load_fixture: Any,
-) -> None:
-    requests: list[httpx.Request] = []
-    search = load_fixture("search.json")
+def _category_index(
+    members: dict[str, tuple[str, ...]],
+    summary: dict[str, object],
+    requests: list[Any],
+    facet_counts: dict[str, int] | None = None,
+) -> Any:
+    """a search index whose products belong to one or more top-level
+    categories, answering `categories.id:a OR categories.id:b` filters."""
+
+    counts = facet_counts
+    if counts is None:
+        counts = {}
+        for categories in members.values():
+            for category_id in categories:
+                counts[category_id] = counts.get(category_id, 0) + 1
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
-        params = json.loads(request.read())["params"]
-        if "facets=" in params:
+        params = parse_qs(json.loads(request.read())["params"], keep_blank_values=True)
+        if "facets" in params:
             return json_response(
                 request,
                 {
                     "hits": [],
-                    "nbHits": 3,
+                    "nbHits": len(members),
                     "nbPages": 0,
-                    "facets": {"categories.id": {"6": 2, "7": 2}},
+                    "facets": {"categories.id": counts},
                 },
             )
-        if "categories.id%3A6" in params:
-            return json_response(
-                request,
-                {
-                    **search,
-                    "hits": search["hits"],
-                    "nbHits": 2,
-                    "nbPages": 1,
-                    "page": 0,
-                    "hitsPerPage": 1000,
-                },
-            )
+        wanted = {
+            clause.removeprefix("categories.id:")
+            for clause in params["filters"][0].split(" OR ")
+        }
+        matched = [pid for pid, cats in members.items() if wanted & set(cats)]
+        page, size = int(params["page"][0]), int(params["hitsPerPage"][0])
+        hits = [
+            {**summary, "id": pid} for pid in matched[page * size : (page + 1) * size]
+        ]
         return json_response(
             request,
             {
-                **search,
-                "hits": [search["hits"][1], {**search["hits"][0], "id": "3003"}],
-                "nbHits": 2,
-                "nbPages": 1,
-                "page": 0,
-                "hitsPerPage": 1000,
+                "hits": hits,
+                "nbHits": len(matched),
+                "nbPages": math.ceil(len(matched) / size),
+                "page": page,
+                "hitsPerPage": size,
             },
         )
 
-    with Mercadona("mad3", transport=httpx.MockTransport(handler)) as client:
+    return handler
+
+
+def test_indexed_catalog_packs_categories_and_reconciles(load_fixture: Any) -> None:
+    requests: list[httpx.Request] = []
+    summary = load_fixture("search.json")["hits"][0]
+    members = {"1001": ("6",), "2002": ("6", "7"), "3003": ("7",)}
+
+    with Mercadona(
+        "mad3",
+        transport=httpx.MockTransport(_category_index(members, summary, requests)),
+    ) as client:
         result = client.get_indexed_catalog()
 
     assert result.reported_total_hits == 3
     assert result.queried_category_ids == ("6", "7")
+    assert result.queried_category_groups == (("6", "7"),)
+    assert result.partition_count == 1
     assert result.reconciled
     assert tuple(product.id for product in result.products) == ("1001", "2002", "3003")
-    assert len(requests) == 3
+    assert len(requests) == 2
+    assert json.loads(requests[1].read()) == {
+        "params": "query=&page=0&hitsPerPage=1000"
+        "&filters=categories.id%3A6+OR+categories.id%3A7"
+    }
+
+
+def test_indexed_catalog_queries_a_large_index_in_few_requests(
+    load_fixture: Any,
+) -> None:
+    requests: list[httpx.Request] = []
+    summary = load_fixture("search.json")["hits"][0]
+    members: dict[str, tuple[str, ...]] = {}
+    for category in range(26):
+        for index in range(100 + 13 * category):
+            members[f"{category}-{index}"] = (str(category),)
+    # a product listed under two categories counts in both facets.
+    members["shared"] = ("0", "25")
+
+    with Mercadona(
+        "mad3",
+        transport=httpx.MockTransport(_category_index(members, summary, requests)),
+    ) as client:
+        result = client.get_indexed_catalog()
+
+    assert result.reconciled
+    assert len(result.products) == len(members)
+    assert len(result.queried_category_ids) == 26
+    sizes = {
+        str(category): 100 + 13 * category + (category in (0, 25))
+        for category in range(26)
+    }
+    assert all(
+        sum(sizes[category] for category in group) <= 1000
+        for group in result.queried_category_groups
+    )
+    assert sorted(c for g in result.queried_category_groups for c in g) == sorted(sizes)
+    assert len(result.queried_category_groups) == 7
+    assert len(requests) == 1 + len(result.queried_category_groups)
+
+
+def test_indexed_catalog_halves_a_group_that_reports_too_many_hits(
+    load_fixture: Any,
+) -> None:
+    requests: list[httpx.Request] = []
+    summary = load_fixture("search.json")["hits"][0]
+    members = {f"6-{index}": ("6",) for index in range(600)}
+    members |= {f"7-{index}": ("7",) for index in range(600)}
+
+    # the overview undercounts, so the packed group overflows the cap.
+    handler = _category_index(members, summary, requests, {"6": 400, "7": 400})
+    with Mercadona("mad3", transport=httpx.MockTransport(handler)) as client:
+        result = client.get_indexed_catalog()
+
+    assert result.reconciled
+    assert len(result.products) == 1200
+    assert result.queried_category_groups == (("6",), ("7",))
+    assert result.partition_count == 2
+    # overview, the overflowing group, then each half.
+    assert len(requests) == 4
+
+
+def test_pack_categories_is_first_fit_decreasing() -> None:
+    from mercapy.client import _pack_categories
+
+    counts: dict[str, object] = {"a": 600, "b": 500, "c": 400, "d": 300, "e": 200}
+    assert _pack_categories(counts, 1000) == [("a", "c"), ("b", "d", "e")]
+    assert _pack_categories({"a": 10, "b": None, "c": True}, 1000) == [
+        ("b",),
+        ("c",),
+        ("a",),
+    ]
 
 
 def _score_index(
