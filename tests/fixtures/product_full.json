@@ -92,6 +92,7 @@
     "price_decreased": true,
     "reference_price": "1.2300",
     "min_bunch_amount": 1.0,
+    "selling_method": 0,
     "reference_format": "L",
     "previous_unit_price": "        1.30",
     "increment_bunch_amount": 1.0

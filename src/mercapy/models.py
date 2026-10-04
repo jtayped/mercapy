@@ -32,7 +32,11 @@ class PhotoFit(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class Price:
-    """parsed price, size, tax, and sale values for a product."""
+    """parsed price, size, tax, and sale values for a product.
+
+    when `sold_by_weight` is set, `unit` is not reliably a basket price; see
+    the usage guide on products sold by weight.
+    """
 
     unit: Decimal | None = None
     bulk: Decimal | None = None
