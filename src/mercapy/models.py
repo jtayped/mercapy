@@ -52,6 +52,7 @@ class Price:
     is_new: bool = False
     is_pack: bool = False
     approximate_size: bool = False
+    sold_by_weight: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -359,6 +360,7 @@ def _price(data: object) -> Price:
         is_new=_boolean(value.get("is_new")) or False,
         is_pack=_boolean(value.get("is_pack")) or False,
         approximate_size=_boolean(value.get("approx_size")) or False,
+        sold_by_weight=_integer(value.get("selling_method")) == 1,
     )
 
 

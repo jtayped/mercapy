@@ -60,6 +60,39 @@ def test_optional_malformed_values_are_ignored() -> None:
     assert product.thumbnail is None
 
 
+def test_selling_method_marks_products_sold_by_weight() -> None:
+    # live shape of a loose fish counter product with no unit size: upstream
+    # reports 99 times the price per kilo as the unit price, kept as supplied.
+    shrimp = parse_product_summary(
+        {
+            "id": "24147",
+            "display_name": "Gamba argentina congelada",
+            "price_instructions": {
+                "unit_size": None,
+                "bulk_price": "12.95",
+                "unit_price": "1282.05",
+                "size_format": "kg",
+                "selling_method": 1,
+                "min_bunch_amount": 0.15,
+                "increment_bunch_amount": 0.15,
+            },
+        }
+    )
+    assert shrimp.price.sold_by_weight
+    assert shrimp.price.unit == Decimal("1282.05")
+    assert shrimp.price.minimum_amount == Decimal("0.15")
+
+    for selling_method in (0, None, True, "1"):
+        product = parse_product_summary(
+            {
+                "id": "1",
+                "display_name": "Llet",
+                "price_instructions": {"selling_method": selling_method},
+            }
+        )
+        assert not product.price.sold_by_weight
+
+
 @pytest.mark.parametrize(
     ("parser", "payload"),
     [
@@ -74,7 +107,7 @@ def test_core_identity_is_required(parser: object, payload: object) -> None:
 
 
 def test_public_api_is_deliberate_and_versioned() -> None:
-    assert mercapy.__version__ == "2.3.0"
+    assert mercapy.__version__ == "2.4.0"
     assert "Mercadona" in mercapy.__all__
     assert "CatalogResult" in mercapy.__all__
     assert "discover_warehouses" in mercapy.__all__

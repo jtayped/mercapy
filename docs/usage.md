@@ -182,3 +182,11 @@ payload = asdict(price)
 
 model fields reflect what the upstream service supplied. optional fields may be
 `None`, and optional collections may be empty.
+
+a product with `price.sold_by_weight` is sold loose. the basket takes it in
+steps of `minimum_amount`, then `increment_amount`, measured in `size_format`,
+and `bulk` is the price of one such unit. upstream sets `unit` to `bulk` times
+`unit_size` for these products, and to `bulk` times 99 when `unit_size` is
+missing, so a 12.95 €/kg shrimp reports a `unit` of 1282.05. the storefront
+never shows that value; it shows `minimum_amount` times `bulk`. mercapy keeps
+`unit` as supplied.
