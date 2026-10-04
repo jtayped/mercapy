@@ -32,7 +32,11 @@ class PhotoFit(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class Price:
-    """parsed price, size, tax, and sale values for a product."""
+    """parsed price, size, tax, and sale values for a product.
+
+    when `sold_by_weight` is set, `unit` is not reliably a basket price; see
+    the usage guide on products sold by weight.
+    """
 
     unit: Decimal | None = None
     bulk: Decimal | None = None
@@ -52,6 +56,7 @@ class Price:
     is_new: bool = False
     is_pack: bool = False
     approximate_size: bool = False
+    sold_by_weight: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -359,6 +364,7 @@ def _price(data: object) -> Price:
         is_new=_boolean(value.get("is_new")) or False,
         is_pack=_boolean(value.get("is_pack")) or False,
         approximate_size=_boolean(value.get("approx_size")) or False,
+        sold_by_weight=_integer(value.get("selling_method")) == 1,
     )
 
 

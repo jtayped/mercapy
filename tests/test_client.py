@@ -485,6 +485,7 @@ def test_get_product_returns_complete_immutable_model(load_fixture: Any) -> None
         assert product.nutrition.ingredients == "Leche de vaca"
         assert product.price.bulk == Decimal("1.2300")
         assert product.price.previous == Decimal("1.30")
+        assert not product.price.sold_by_weight
         assert product.photos[0].file_name == "milk.jpg"
         assert product.photos[0].perspective == 2
         assert len(product.photos) == 2
@@ -514,6 +515,23 @@ def test_get_product_accepts_missing_optional_and_unknown_fields(
     assert product.details.description is None
     assert product.nutrition.allergens is None
     assert product.price.unit_size is None
+
+
+def test_get_product_reports_a_product_sold_by_weight(load_fixture: Any) -> None:
+    transport = httpx.MockTransport(
+        lambda request: json_response(
+            request, load_fixture("product_sold_by_weight.json")
+        )
+    )
+    with Mercadona("mad3", transport=transport) as client:
+        product = client.get_product("24147")
+
+    assert product.is_bulk
+    assert product.price.sold_by_weight
+    assert product.price.unit_size is None
+    assert product.price.unit == Decimal("1282.05")
+    assert product.price.bulk == Decimal("12.95")
+    assert product.price.minimum_amount == Decimal("0.15")
 
 
 def test_categories_category_and_catalog_request_counts(load_fixture: Any) -> None:

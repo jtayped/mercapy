@@ -149,7 +149,7 @@ tuple. ids use `str`, and numeric prices and quantities use `Decimal`.
 
 | model | fields |
 | --- | --- |
-| `Price` | `unit`, `bulk`, `previous`, `reference`, `tax_percentage`, `unit_size`, `pack_size`, `total_units`, `drained_weight`, `minimum_amount`, `increment_amount`, `unit_name`, `size_format`, `reference_format`, `is_discounted`, `is_new`, `is_pack`, `approximate_size` |
+| `Price` | `unit`, `bulk`, `previous`, `reference`, `tax_percentage`, `unit_size`, `pack_size`, `total_units`, `drained_weight`, `minimum_amount`, `increment_amount`, `unit_name`, `size_format`, `reference_format`, `is_discounted`, `is_new`, `is_pack`, `approximate_size`, `sold_by_weight` |
 | `Availability` | `published`, `status`, `limit`, `unavailable_from`, `unavailable_weekdays` |
 
 ### categories, home, and search

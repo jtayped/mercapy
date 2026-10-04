@@ -4,6 +4,15 @@ this project follows [semantic versioning](https://semver.org/).
 
 ## [unreleased]
 
+## [2.4.0] - 2026-10-04
+
+### added
+
+- `Price.sold_by_weight` reports products sold loose in `minimum_amount`
+  steps, read from upstream's `selling_method`. upstream's `unit` for them is
+  `bulk` times `unit_size`, or `bulk` times 99 when `unit_size` is missing; the
+  usage guide explains what the storefront shows instead.
+
 ## [2.3.0] - 2026-10-04
 
 ### changed
